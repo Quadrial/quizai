@@ -1,0 +1,33 @@
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { AuthProvider } from './contexts/AuthContext'
+import Layout from './components/Layout'
+import Home from './pages/Home'
+import Dashboard from './pages/Dashboard'
+import CreateQuiz from './pages/CreateQuiz'
+import TakeQuiz from './pages/TakeQuiz'
+import QuizPreview from './pages/QuizPreview'
+import Settings from './pages/Settings'
+import Login from './pages/Login'
+import './App.css'
+
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/create-quiz" element={<CreateQuiz />} />
+            <Route path="/quiz/:id" element={<TakeQuiz />} />
+            <Route path="/quiz/:id/preview" element={<QuizPreview />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/login" element={<Login />} />
+          </Routes>
+        </Layout>
+      </Router>
+    </AuthProvider>
+  )
+}
+
+export default App
