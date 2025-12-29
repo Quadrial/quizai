@@ -30,7 +30,7 @@ const CreateQuiz: React.FC = () => {
   const [textContent, setTextContent] = useState('')
   const [urlContent, setUrlContent] = useState('')
   const [pdfFile, setPdfFile] = useState<File | null>(null)
-  const [questionCount, setQuestionCount] = useState(5)
+  const [questionCount, setQuestionCount] = useState(10)
   const [questionType, setQuestionType] = useState<'multiple-choice' | 'true-false'>('multiple-choice')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -512,17 +512,19 @@ const CreateQuiz: React.FC = () => {
               <label htmlFor="questionCount" className="block text-sm font-semibold text-primary-900 mb-2">
                 Number of Questions
               </label>
-              <select
+              <input
+                type="number"
                 id="questionCount"
                 value={questionCount}
-                onChange={(e) => setQuestionCount(Number(e.target.value))}
+                onChange={(e) => setQuestionCount(Math.max(1, Math.min(100, Number(e.target.value) || 1)))}
+                min={1}
+                max={100}
                 className="w-full px-4 py-3 border border-primary-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 bg-white"
-              >
-                <option value={3}>3 questions</option>
-                <option value={5}>5 questions</option>
-                <option value={10}>10 questions</option>
-                <option value={15}>15 questions</option>
-              </select>
+                placeholder="Enter number of questions"
+              />
+              <p className="text-xs text-primary-600 mt-1">
+                Enter any number between 1-100 questions
+              </p>
             </div>
 
             <div>
@@ -539,7 +541,7 @@ const CreateQuiz: React.FC = () => {
                     onClick={() => setQuestionType(type)}
                     className={`w-full p-3 rounded-lg border-2 transition-all duration-200 text-left ${
                       questionType === type
-                        ? 'border-primary-500 bg-primary-50 shadow-md'
+                        ? 'border-primary-500 bg-gray-300 shadow-md'
                         : 'border-primary-200 bg-white hover:border-primary-300'
                     }`}
                   >
