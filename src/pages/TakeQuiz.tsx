@@ -388,32 +388,60 @@ const TakeQuiz: React.FC = () => {
           <div className="space-y-4">
             {question.options.map((option: string, index: number) => {
               const isSelected = answers[currentQuestion] === index
+              const isCorrect = index === question.correctAnswer
+              const hasAnswered = answers[currentQuestion] !== -1
+
               return (
-                <button
+                <label
                   key={index}
-                  onClick={() => handleAnswerSelect(index)}
-                  className={`w-full text-left p-6 rounded-xl border-2 transition-all duration-200 transform hover:scale-[1.01] active:scale-[0.99] shadow-sm hover:shadow-md ${
-                    isSelected
-                      ? 'bg-primary-50 border-primary-400 text-primary-900 shadow-lg ring-2 ring-primary-200'
-                      : 'bg-white border-primary-200 text-primary-700 hover:bg-primary-25 hover:border-primary-300'
+                  className={`flex items-start space-x-4 p-6 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
+                    hasAnswered
+                      ? isCorrect
+                        ? 'bg-green-50 border-green-300 text-green-900'
+                        : isSelected && !isCorrect
+                          ? 'bg-red-50 border-red-300 text-red-900'
+                          : 'bg-gray-50 border-gray-200 text-gray-500'
+                      : 'bg-white border-primary-200 text-primary-700 hover:bg-primary-25 hover:border-primary-300 hover:shadow-md'
                   }`}
                 >
-                  <div className="flex items-center space-x-4">
-                    <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-base font-bold transition-all shadow-sm ${
-                      isSelected
-                        ? 'bg-primary-500 text-white shadow-md'
-                        : 'bg-primary-100 text-primary-600'
-                    }`}>
-                      {String.fromCharCode(65 + index)}
-                    </div>
-                    <span className="text-lg leading-relaxed">
-                      {option}
-                    </span>
+                  <div className="flex-shrink-0 mt-1">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => handleAnswerSelect(index)}
+                      disabled={hasAnswered}
+                      className={`w-5 h-5 rounded border-2 transition-all ${
+                        hasAnswered
+                          ? isCorrect
+                            ? 'bg-green-500 border-green-500 text-white'
+                            : isSelected && !isCorrect
+                              ? 'bg-red-500 border-red-500 text-white'
+                              : 'bg-gray-300 border-gray-300'
+                          : 'border-primary-300 text-primary-600 focus:ring-primary-500 focus:ring-2'
+                      }`}
+                    />
                   </div>
-                </button>
+                  <div className="flex-1 leading-relaxed text-lg">
+                    <span className="font-medium mr-3 text-primary-600">
+                      {String.fromCharCode(65 + index)}.
+                    </span>
+                    {option}
+                  </div>
+                  {hasAnswered && (
+                    <div className="flex-shrink-0">
+                      {isCorrect ? (
+                        <HiCheckCircle className="w-6 h-6 text-green-600" />
+                      ) : isSelected && !isCorrect ? (
+                        <HiXCircle className="w-6 h-6 text-red-600" />
+                      ) : null}
+                    </div>
+                  )}
+                </label>
               )
             })}
           </div>
+
+          {/* Explanation removed - will show only in final results */}
         </div>
 
         {/* Navigation */}

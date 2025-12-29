@@ -2,6 +2,13 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { localStorageService } from '../services/localStorageService'
+import {
+  HiUser,
+  HiLockClosed,
+  HiArrowRight,
+  HiSparkles,
+  HiExclamationTriangle
+} from 'react-icons/hi2'
 
 const Login: React.FC = () => {
   const [isSignUp, setIsSignUp] = useState(false)
@@ -58,77 +65,121 @@ const Login: React.FC = () => {
   }
 
   return (
-    <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-2xl font-bold text-center mb-6">
-        {isSignUp ? 'Create Account' : 'Sign In'}
-      </h2>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-            Email
-          </label>
-          <input
-            type="email"
-            id="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter your email"
-          />
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50 flex items-center justify-center px-4">
+      <div className="max-w-md w-full">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full shadow-lg mb-4">
+            <HiSparkles className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-3xl font-bold text-primary-900 mb-2">Welcome to QuizAI</h1>
+          <p className="text-primary-600">Transform your study materials into interactive quizzes</p>
         </div>
 
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-            Password
-          </label>
-          <input
-            type="password"
-            id="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter your password"
-          />
+        <div className="bg-white rounded-2xl shadow-xl p-8 border border-primary-100">
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold text-primary-900">
+              {isSignUp ? 'Create Account' : 'Sign In'}
+            </h2>
+            <p className="text-primary-600 mt-1">
+              {isSignUp ? 'Join our learning community' : 'Access your quizzes and materials'}
+            </p>
+          </div>
+
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+              <div className="flex items-start space-x-3">
+                <HiExclamationTriangle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                <p className="text-red-800 text-sm leading-relaxed">{error}</p>
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label htmlFor="email" className="block text-sm font-semibold text-primary-900 mb-2">
+                Email Address
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <HiUser className="h-5 w-5 text-primary-400" />
+                </div>
+                <input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full pl-12 pr-4 py-3 border border-primary-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 bg-white"
+                  placeholder="Enter your email address"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-semibold text-primary-900 mb-2">
+                Password
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <HiLockClosed className="h-5 w-5 text-primary-400" />
+                </div>
+                <input
+                  type="password"
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  className="w-full pl-12 pr-4 py-3 border border-primary-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 bg-white"
+                  placeholder="Enter your password"
+                />
+              </div>
+              {isSignUp && (
+                <p className="text-xs text-primary-600 mt-1">Password must be at least 6 characters long</p>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold text-lg rounded-lg hover:from-primary-600 hover:to-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+            >
+              {loading ? (
+                <>
+                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
+                  {isSignUp ? 'Creating Account...' : 'Signing In...'}
+                </>
+              ) : (
+                <>
+                  {isSignUp ? 'Create Account' : 'Sign In'}
+                  <HiArrowRight className="w-5 h-5 ml-2" />
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => setIsSignUp(!isSignUp)}
+              className="text-primary-600 hover:text-primary-700 font-medium transition-colors"
+            >
+              {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+            </button>
+          </div>
+
+          <div className="mt-8 pt-6 border-t border-primary-100">
+            <button
+              onClick={handleGuestMode}
+              className="w-full inline-flex items-center justify-center px-6 py-3 bg-white text-primary-700 font-semibold rounded-lg border-2 border-primary-200 hover:bg-primary-50 hover:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md"
+            >
+              <HiSparkles className="w-5 h-5 mr-2" />
+              Continue as Guest
+            </button>
+            <p className="text-xs text-primary-600 text-center mt-3 leading-relaxed">
+              Explore QuizAI without an account. Your data will be stored locally and can be migrated to a full account later.
+            </p>
+          </div>
         </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-        >
-          {loading ? 'Loading...' : (isSignUp ? 'Create Account' : 'Sign In')}
-        </button>
-      </form>
-
-      <div className="mt-4 text-center">
-        <button
-          onClick={() => setIsSignUp(!isSignUp)}
-          className="text-blue-600 hover:text-blue-700 text-sm"
-        >
-          {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
-        </button>
-      </div>
-
-      <div className="mt-6 pt-4 border-t border-gray-200">
-        <button
-          onClick={handleGuestMode}
-          className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
-        >
-          Continue as Guest
-        </button>
-        <p className="text-xs text-gray-500 text-center mt-2">
-          Guest data is stored locally and can be migrated to your account later
-        </p>
       </div>
     </div>
   )
