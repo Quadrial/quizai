@@ -15,8 +15,7 @@ import {
   HiArrowRight,
   HiSparkles,
   HiExclamationTriangle,
-  HiKey,
-  HiPlay
+  HiKey
 } from 'react-icons/hi2'
 
 const CreateQuiz: React.FC = () => {
@@ -24,7 +23,7 @@ const CreateQuiz: React.FC = () => {
   const navigate = useNavigate()
   const location = useLocation()
   
-  const [step, setStep] = useState<'material' | 'generating' | 'preview'>('material')
+  const [step, setStep] = useState<'material' | 'generating'>('material')
   const [materialType, setMaterialType] = useState<'text' | 'pdf' | 'url'>('text')
   const [materialName, setMaterialName] = useState('')
   const [textContent, setTextContent] = useState('')
@@ -34,7 +33,6 @@ const CreateQuiz: React.FC = () => {
   const [questionType, setQuestionType] = useState<'multiple-choice' | 'true-false'>('multiple-choice')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [generatedQuiz, setGeneratedQuiz] = useState<any>(null)
   const [apiTestResult, setApiTestResult] = useState('')
 
   // Check if we have a pre-selected material from dashboard
@@ -91,8 +89,10 @@ const CreateQuiz: React.FC = () => {
 
       // Generate quiz
       const quiz = await quizService.generateQuiz(material, questionCount, questionType)
-      setGeneratedQuiz(quiz)
-      setStep('preview')
+      
+      // Save the quiz and navigate directly to take it
+      await dataService.saveQuiz(quiz, user.id)
+      navigate(`/quiz/${quiz.id}`)
     } catch (err) {
       const error = err as Error
       setError(error.message || 'Failed to generate quiz')
@@ -102,35 +102,7 @@ const CreateQuiz: React.FC = () => {
     }
   }
 
-  const handleSaveQuiz = async () => {
-    if (!generatedQuiz || !user) return
 
-    setLoading(true)
-    try {
-      await dataService.saveQuiz(generatedQuiz, user.id)
-      navigate('/dashboard')
-    } catch (err) {
-      const error = err as Error
-      setError(error.message || 'Failed to save quiz')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleTakeQuiz = async () => {
-    if (!generatedQuiz || !user) return
-
-    setLoading(true)
-    try {
-      await dataService.saveQuiz(generatedQuiz, user.id)
-      navigate(`/quiz/${generatedQuiz.id}`)
-    } catch (err) {
-      const error = err as Error
-      setError(error.message || 'Failed to save quiz')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleTestAPI = async () => {
     setApiTestResult('Testing...')
@@ -193,125 +165,7 @@ const CreateQuiz: React.FC = () => {
     )
   }
 
-  if (step === 'preview' && generatedQuiz) {
-    return (
-      <div className=" min-h-screen bg-background">
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-green-500 to-green-600 rounded-full shadow-lg mb-4">
-              <HiCheckCircle className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-3xl font-bold text-on-background mb-2">Quiz Preview</h1>
-            <p className="text-on-background/60">Review your generated quiz before saving</p>
-          </div>
 
-          {error && (
-            <ErrorMessage
-              message={error}
-              onRetry={() => setStep('material')}
-              onDismiss={() => setError('')}
-            />
-          )}
-
-          <div className="bg-surface rounded-2xl shadow-xl p-8 mb-8 border border-gray-100">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-on-background">{generatedQuiz.title}</h2>
-                <p className="text-on-background/60 mt-1">{generatedQuiz.questions.length} questions • {questionType === 'multiple-choice' ? 'Multiple Choice' : 'True/False'}</p>
-              </div>
-              <div className="flex items-center text-amber-600 bg-amber-50 px-4 py-2 rounded-lg">
-                <HiExclamationTriangle className="w-5 h-5 mr-2" />
-                <span className="text-sm font-medium">Preview Mode</span>
-              </div>
-            </div>
-
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-              <p className="text-sm text-amber-800">
-                <strong>Note:</strong> Correct answers are hidden to maintain quiz integrity. Answers will be revealed after students complete the quiz.
-              </p>
-            </div>
-
-            <div className="space-y-6">
-              {generatedQuiz.questions.map((question: any, index: number) => (
-                <div key={question.id} className="border-b border-gray-100 pb-6 last:border-b-0">
-                  <h3 className="text-lg font-semibold text-on-background mb-4 flex items-start">
-                    <span className="flex-shrink-0 w-8 h-8 bg-primary/10 text-primary rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5">
-                      {index + 1}
-                    </span>
-                    <span className="leading-relaxed">{question.question}</span>
-                  </h3>
-                  <div className="ml-11 space-y-3">
-                    {question.options.map((option: string, optionIndex: number) => (
-                      <div
-                        key={optionIndex}
-                        className="flex items-center p-3 rounded-lg bg-primary/5 border border-primary/10 hover:bg-primary/10 transition-colors"
-                      >
-                        <span className="flex-shrink-0 w-6 h-6 bg-surface border-2 border-primary/30 rounded-full flex items-center justify-center text-xs font-bold text-primary mr-3">
-                          {String.fromCharCode(65 + optionIndex)}
-                        </span>
-                        <span className="text-on-background/80">{option}</span>
-                      </div>
-                    ))}
-                  </div>
-                  {question.explanation && (
-                    <div className="ml-11 mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <p className="text-sm text-blue-800">
-                        <strong>Explanation:</strong> {question.explanation}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button
-              onClick={handleTakeQuiz}
-              disabled={loading}
-              className="inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-primary to-secondary text-on-primary font-semibold rounded-lg hover:from-primary/90 hover:to-secondary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-            >
-              {loading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <HiPlay className="w-5 h-5 mr-2" />
-                  Save & Take Quiz
-                </>
-              )}
-            </button>
-            <button
-              onClick={handleSaveQuiz}
-              disabled={loading}
-              className="inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-lg hover:from-green-600 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-            >
-              {loading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <HiCheckCircle className="w-5 h-5 mr-2" />
-                  Save Quiz
-                </>
-              )}
-            </button>
-            <button
-              onClick={() => setStep('material')}
-              className="inline-flex items-center justify-center px-8 py-3 bg-surface text-on-background font-semibold rounded-lg border-2 border-gray-200 hover:bg-surface-200 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-200 shadow-md hover:shadow-lg"
-            >
-              <HiArrowRight className="w-5 h-5 mr-2 rotate-180" />
-              Back to Edit
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
