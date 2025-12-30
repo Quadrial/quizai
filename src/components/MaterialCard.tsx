@@ -47,24 +47,24 @@ const MaterialCard: React.FC<MaterialCardProps> = ({ material, onDelete }) => {
   const Icon = getIcon()
 
   return (
-    <div className="group bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl hover:border-gray-200 transition-all duration-300 transform hover:-translate-y-1">
+    <div className="group bg-surface rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl hover:border-gray-200 transition-all duration-300 transform hover:-translate-y-1">
       <div className="p-6">
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center space-x-4">
             <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-r ${getTypeColor()}`}>
-              <Icon className="w-6 h-6 text-white" />
+              <Icon className="w-6 h-6 text-on-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-lg text-gray-900 line-clamp-1 group-hover:text-blue-600 transition-colors">
+              <h3 className="font-bold text-lg text-on-background line-clamp-1 group-hover:text-primary transition-colors">
                 {material.name}
               </h3>
-              <p className="text-sm text-gray-600">{getTypeLabel()}</p>
+              <p className="text-sm text-on-background/60">{getTypeLabel()}</p>
             </div>
           </div>
           <button
             onClick={handleDelete}
-            className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-2 rounded-lg hover:bg-red-50 transition-all"
+            className="opacity-0 group-hover:opacity-100 text-on-background/40 hover:text-red-500 p-2 rounded-lg hover:bg-red-50 transition-all"
             title="Delete material"
           >
             <HiTrash className="w-5 h-5" />
@@ -72,7 +72,7 @@ const MaterialCard: React.FC<MaterialCardProps> = ({ material, onDelete }) => {
         </div>
 
         {/* Date */}
-        <div className="flex items-center space-x-2 text-sm text-gray-500 mb-6">
+        <div className="flex items-center space-x-2 text-sm text-on-background/50 mb-6">
           <HiCalendar className="w-4 h-4" />
           <span>Added {new Date(material.uploadedAt).toLocaleDateString()}</span>
         </div>
@@ -82,7 +82,7 @@ const MaterialCard: React.FC<MaterialCardProps> = ({ material, onDelete }) => {
           <Link
             to="/create-quiz"
             state={{ selectedMaterial: material }}
-            className="flex-1 group/btn inline-flex items-center justify-center px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl font-semibold hover:from-green-700 hover:to-green-800 transition-all shadow-sm hover:shadow-md transform hover:scale-105"
+            className="flex-1 group/btn inline-flex items-center justify-center px-4 py-3 bg-gradient-to-r from-primary to-secondary text-on-primary rounded-xl font-semibold hover:from-primary/90 hover:to-secondary/90 transition-all shadow-sm hover:shadow-md transform hover:scale-105"
           >
             <HiSparkles className="w-5 h-5 mr-2" />
             Generate Quiz
@@ -92,7 +92,7 @@ const MaterialCard: React.FC<MaterialCardProps> = ({ material, onDelete }) => {
               const preview = material.content.substring(0, 200) + (material.content.length > 200 ? '...' : '')
               alert(`Content Preview:\n\n${preview}`)
             }}
-            className="inline-flex items-center justify-center px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+            className="inline-flex items-center justify-center px-4 py-3 bg-surface-200 text-on-background/70 rounded-xl font-medium hover:bg-surface-300 transition-colors"
           >
             <HiEye className="w-5 h-5" />
           </button>

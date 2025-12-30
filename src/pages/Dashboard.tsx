@@ -97,17 +97,17 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-white shadow-sm">
+      <div className="bg-surface shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
             <div>
               <div className="flex items-center space-x-3 mb-2">
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
-                  <HiChartBar className="w-6 h-6 text-white" />
+                <div className="w-10 h-10 bg-gradient-to-r from-primary to-secondary rounded-xl flex items-center justify-center">
+                  <HiChartBar className="w-6 h-6 text-on-primary" />
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                <h1 className="text-2xl sm:text-3xl font-bold text-on-background">
                   Dashboard
                   {user.isGuest && (
                     <span className="ml-3 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-amber-100 text-amber-800">
@@ -116,13 +116,13 @@ const Dashboard: React.FC = () => {
                   )}
                 </h1>
               </div>
-              <p className="text-gray-600 text-lg">
+              <p className="text-on-background/60 text-lg">
                 Manage your quizzes and study materials
               </p>
             </div>
             <Link
               to="/create-quiz"
-              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
+              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-primary to-secondary text-on-primary rounded-xl font-semibold hover:from-primary/90 hover:to-secondary/90 transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
             >
               <HiPlus className="w-5 h-5 mr-2" />
               Create New Quiz
@@ -155,53 +155,53 @@ const Dashboard: React.FC = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
+          <div className="bg-surface rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
-                <HiDocumentText className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 bg-gradient-to-r from-primary to-secondary rounded-xl flex items-center justify-center">
+                <HiDocumentText className="w-6 h-6 text-on-primary" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Quizzes</p>
-                <p className="text-3xl font-bold text-gray-900">{quizzes.length}</p>
+                <p className="text-sm font-medium text-on-background/60">Total Quizzes</p>
+                <p className="text-3xl font-bold text-on-background">{quizzes.length}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
+          <div className="bg-surface rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center">
                 <HiSparkles className="w-6 h-6 text-white" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Study Materials</p>
-                <p className="text-3xl font-bold text-gray-900">{materials.length}</p>
+                <p className="text-sm font-medium text-on-background/60">Study Materials</p>
+                <p className="text-3xl font-bold text-on-background">{materials.length}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
+          <div className="bg-surface rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
                 <HiQuestionMarkCircle className="w-6 h-6 text-white" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Questions</p>
-                <p className="text-3xl font-bold text-gray-900">{totalQuestions}</p>
+                <p className="text-sm font-medium text-on-background/60">Total Questions</p>
+                <p className="text-3xl font-bold text-on-background">{totalQuestions}</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-8">
+        <div className="bg-surface rounded-xl shadow-sm border border-gray-100 mb-8">
           <div className="border-b border-gray-200">
             <nav className="flex">
               <button
                 onClick={() => setActiveTab('quizzes')}
                 className={`flex-1 py-4 px-6 text-center font-semibold transition-colors ${
                   activeTab === 'quizzes'
-                    ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    ? 'text-primary border-b-2 border-primary bg-primary/10'
+                    : 'text-on-background/60 hover:text-on-background hover:bg-surface-200'
                 }`}
               >
                 <div className="flex items-center justify-center space-x-2">
@@ -213,8 +213,8 @@ const Dashboard: React.FC = () => {
                 onClick={() => setActiveTab('materials')}
                 className={`flex-1 py-4 px-6 text-center font-semibold transition-colors ${
                   activeTab === 'materials'
-                    ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    ? 'text-primary border-b-2 border-primary bg-primary/10'
+                    : 'text-on-background/60 hover:text-on-background hover:bg-surface-200'
                 }`}
               >
                 <div className="flex items-center justify-center space-x-2">
@@ -231,16 +231,16 @@ const Dashboard: React.FC = () => {
               <div>
                 {quizzes.length === 0 ? (
                   <div className="text-center py-16">
-                    <div className="w-20 h-20 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                      <HiDocumentText className="w-10 h-10 text-blue-600" />
+                    <div className="w-20 h-20 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <HiDocumentText className="w-10 h-10 text-primary" />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">No quizzes yet</h3>
-                    <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                    <h3 className="text-xl font-bold text-on-background mb-2">No quizzes yet</h3>
+                    <p className="text-on-background/60 mb-6 max-w-md mx-auto">
                       Create your first quiz from study materials to start learning
                     </p>
                     <Link
                       to="/create-quiz"
-                      className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl"
+                      className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-primary to-secondary text-on-primary rounded-xl font-semibold hover:from-primary/90 hover:to-secondary/90 transition-all shadow-lg hover:shadow-xl"
                     >
                       <HiPlus className="w-5 h-5 mr-2" />
                       Create Your First Quiz
@@ -267,8 +267,8 @@ const Dashboard: React.FC = () => {
                     <div className="w-20 h-20 bg-gradient-to-r from-green-100 to-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
                       <HiSparkles className="w-10 h-10 text-green-600" />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">No study materials yet</h3>
-                    <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                    <h3 className="text-xl font-bold text-on-background mb-2">No study materials yet</h3>
+                    <p className="text-on-background/60 mb-6 max-w-md mx-auto">
                       Upload PDFs, paste text, or add web links to generate quizzes
                     </p>
                     <Link

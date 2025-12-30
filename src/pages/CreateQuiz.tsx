@@ -158,33 +158,33 @@ const CreateQuiz: React.FC = () => {
 
   if (step === 'generating') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50">
+      <div className="min-h-screen bg-background">
         <div className="max-w-2xl mx-auto px-4 py-8">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full shadow-lg mb-4">
-              <HiSparkles className="w-8 h-8 text-white" />
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-primary to-secondary rounded-full shadow-lg mb-4">
+              <HiSparkles className="w-8 h-8 text-on-primary" />
             </div>
-            <h1 className="text-3xl font-bold text-primary-900 mb-2">Creating Your Quiz</h1>
-            <p className="text-primary-600">AI is analyzing your material and generating questions...</p>
+            <h1 className="text-3xl font-bold text-on-background mb-2">Creating Your Quiz</h1>
+            <p className="text-on-background/60">AI is analyzing your material and generating questions...</p>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-xl p-8 border border-primary-100">
+          <div className="bg-surface rounded-2xl shadow-xl p-8 border border-gray-100">
             <LoadingSpinner size="lg" text="Generating your quiz with AI..." />
             <div className="mt-6 space-y-3">
-              <div className="flex items-center text-sm text-primary-700">
+              <div className="flex items-center text-sm text-on-background/70">
                 <HiCheckCircle className="w-5 h-5 text-green-500 mr-3" />
                 Processing your study material
               </div>
-              <div className="flex items-center text-sm text-primary-700">
+              <div className="flex items-center text-sm text-on-background/70">
                 <HiCheckCircle className="w-5 h-5 text-green-500 mr-3" />
                 Analyzing content for key concepts
               </div>
-              <div className="flex items-center text-sm text-primary-600 animate-pulse">
-                <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mr-3"></div>
+              <div className="flex items-center text-sm text-on-background/60 animate-pulse">
+                <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin mr-3"></div>
                 Generating quiz questions...
               </div>
             </div>
-            <p className="text-center text-sm text-primary-500 mt-6">
+            <p className="text-center text-sm text-on-background/50 mt-6">
               This usually takes 10-30 seconds depending on content length
             </p>
           </div>
@@ -195,14 +195,14 @@ const CreateQuiz: React.FC = () => {
 
   if (step === 'preview' && generatedQuiz) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50">
+      <div className=" min-h-screen bg-background">
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-green-500 to-green-600 rounded-full shadow-lg mb-4">
               <HiCheckCircle className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-primary-900 mb-2">Quiz Preview</h1>
-            <p className="text-primary-600">Review your generated quiz before saving</p>
+            <h1 className="text-3xl font-bold text-on-background mb-2">Quiz Preview</h1>
+            <p className="text-on-background/60">Review your generated quiz before saving</p>
           </div>
 
           {error && (
@@ -213,11 +213,11 @@ const CreateQuiz: React.FC = () => {
             />
           )}
 
-          <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 border border-primary-100">
+          <div className="bg-surface rounded-2xl shadow-xl p-8 mb-8 border border-gray-100">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-2xl font-bold text-primary-900">{generatedQuiz.title}</h2>
-                <p className="text-primary-600 mt-1">{generatedQuiz.questions.length} questions • {questionType === 'multiple-choice' ? 'Multiple Choice' : 'True/False'}</p>
+                <h2 className="text-2xl font-bold text-on-background">{generatedQuiz.title}</h2>
+                <p className="text-on-background/60 mt-1">{generatedQuiz.questions.length} questions • {questionType === 'multiple-choice' ? 'Multiple Choice' : 'True/False'}</p>
               </div>
               <div className="flex items-center text-amber-600 bg-amber-50 px-4 py-2 rounded-lg">
                 <HiExclamationTriangle className="w-5 h-5 mr-2" />
@@ -233,9 +233,9 @@ const CreateQuiz: React.FC = () => {
 
             <div className="space-y-6">
               {generatedQuiz.questions.map((question: any, index: number) => (
-                <div key={question.id} className="border-b border-primary-100 pb-6 last:border-b-0">
-                  <h3 className="text-lg font-semibold text-primary-900 mb-4 flex items-start">
-                    <span className="flex-shrink-0 w-8 h-8 bg-primary-100 text-primary-700 rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5">
+                <div key={question.id} className="border-b border-gray-100 pb-6 last:border-b-0">
+                  <h3 className="text-lg font-semibold text-on-background mb-4 flex items-start">
+                    <span className="flex-shrink-0 w-8 h-8 bg-primary/10 text-primary rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5">
                       {index + 1}
                     </span>
                     <span className="leading-relaxed">{question.question}</span>
@@ -244,12 +244,12 @@ const CreateQuiz: React.FC = () => {
                     {question.options.map((option: string, optionIndex: number) => (
                       <div
                         key={optionIndex}
-                        className="flex items-center p-3 rounded-lg bg-primary-50 border border-primary-100 hover:bg-primary-100 transition-colors"
+                        className="flex items-center p-3 rounded-lg bg-primary/5 border border-primary/10 hover:bg-primary/10 transition-colors"
                       >
-                        <span className="flex-shrink-0 w-6 h-6 bg-white border-2 border-primary-300 rounded-full flex items-center justify-center text-xs font-bold text-primary-700 mr-3">
+                        <span className="flex-shrink-0 w-6 h-6 bg-surface border-2 border-primary/30 rounded-full flex items-center justify-center text-xs font-bold text-primary mr-3">
                           {String.fromCharCode(65 + optionIndex)}
                         </span>
-                        <span className="text-primary-800">{option}</span>
+                        <span className="text-on-background/80">{option}</span>
                       </div>
                     ))}
                   </div>
@@ -269,7 +269,7 @@ const CreateQuiz: React.FC = () => {
             <button
               onClick={handleTakeQuiz}
               disabled={loading}
-              className="inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold rounded-lg hover:from-primary-600 hover:to-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              className="inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-primary to-secondary text-on-primary font-semibold rounded-lg hover:from-primary/90 hover:to-secondary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
             >
               {loading ? (
                 <>
@@ -302,7 +302,7 @@ const CreateQuiz: React.FC = () => {
             </button>
             <button
               onClick={() => setStep('material')}
-              className="inline-flex items-center justify-center px-8 py-3 bg-white text-primary-700 font-semibold rounded-lg border-2 border-primary-200 hover:bg-primary-50 hover:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all duration-200 shadow-md hover:shadow-lg"
+              className="inline-flex items-center justify-center px-8 py-3 bg-surface text-on-background font-semibold rounded-lg border-2 border-gray-200 hover:bg-surface-200 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-200 shadow-md hover:shadow-lg"
             >
               <HiArrowRight className="w-5 h-5 mr-2 rotate-180" />
               Back to Edit
@@ -314,14 +314,14 @@ const CreateQuiz: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50">
+    <div className="flex items-center justify-center min-h-screen bg-background">
       <div className="max-w-2xl mx-auto px-4 py-8">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full shadow-lg mb-4">
-            <HiSparkles className="w-8 h-8 text-white" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-primary to-secondary rounded-full shadow-lg mb-4">
+            <HiSparkles className="w-8 h-8 text-on-primary" />
           </div>
-          <h1 className="text-3xl font-bold text-primary-900 mb-2">Create New Quiz</h1>
-          <p className="text-primary-600">Transform your study materials into interactive quizzes</p>
+          <h1 className="text-3xl font-bold text-on-background mb-2">Create New Quiz</h1>
+          <p className="text-on-background/60">Transform your study materials into interactive quizzes</p>
         </div>
 
         {error && (
@@ -332,23 +332,23 @@ const CreateQuiz: React.FC = () => {
           />
         )}
 
-        <div className="bg-white rounded-2xl shadow-xl p-8 border border-primary-100">
+        <div className="bg-surface rounded-2xl shadow-xl p-8 border border-gray-100">
           {/* API Test Section */}
-          <div className="mb-8 p-6 bg-gradient-to-r from-primary-50 to-secondary-50 rounded-xl border border-primary-100">
+          <div className="mb-8 p-6 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl border border-primary/20">
             <div className="flex items-center mb-4">
-              <HiKey className="w-5 h-5 text-primary-600 mr-2" />
-              <h3 className="text-lg font-semibold text-primary-900">API Configuration</h3>
+              <HiKey className="w-5 h-5 text-primary mr-2" />
+              <h3 className="text-lg font-semibold text-on-background">API Configuration</h3>
             </div>
 
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-4">
               <button
                 onClick={handleTestAPI}
-                className="inline-flex items-center px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all duration-200"
+                className="inline-flex items-center px-4 py-2 bg-primary text-on-primary text-sm font-medium rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-200"
               >
                 Test Gemini API
               </button>
               {apiTestResult && (
-                <span className="text-sm text-primary-700 font-medium">{apiTestResult}</span>
+                <span className="text-sm text-on-background/70 font-medium">{apiTestResult}</span>
               )}
             </div>
 
@@ -362,7 +362,7 @@ const CreateQuiz: React.FC = () => {
                     href="https://makersuite.google.com/app/apikey"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center text-primary-600 hover:text-primary-700 font-medium mt-2"
+                    className="inline-flex items-center text-primary hover:text-primary/90 font-medium mt-2"
                   >
                     Get your free API key <HiArrowRight className="w-4 h-4 ml-1" />
                   </a>
@@ -380,10 +380,11 @@ const CreateQuiz: React.FC = () => {
               </div>
             )}
           </div>
+          
 
           {/* Material Type Selection */}
           <div className="mb-8">
-            <label className="block text-lg font-semibold text-primary-900 mb-4">
+            <label className="block text-lg font-semibold text-on-background mb-4">
               Choose Material Type
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -397,15 +398,15 @@ const CreateQuiz: React.FC = () => {
                   onClick={() => setMaterialType(type)}
                   className={`p-4 rounded-xl border-2 transition-all duration-200 text-left ${
                     materialType === type
-                      ? 'border-primary-500 bg-primary-50 shadow-lg transform scale-105'
-                      : 'border-primary-200 bg-white hover:border-primary-300 hover:shadow-md'
+                      ? 'border-primary bg-primary/10 shadow-lg transform scale-105'
+                      : 'border-gray-200 bg-surface hover:border-primary/50 hover:shadow-md'
                   }`}
                 >
                   <Icon className={`w-6 h-6 mb-2 ${
-                    materialType === type ? 'text-primary-600' : 'text-primary-500'
+                    materialType === type ? 'text-primary' : 'text-on-background/50'
                   }`} />
-                  <div className="font-semibold text-primary-900 mb-1">{label}</div>
-                  <div className="text-sm text-primary-600">{desc}</div>
+                  <div className="font-semibold text-on-background mb-1">{label}</div>
+                  <div className="text-sm text-on-background/60">{desc}</div>
                 </button>
               ))}
             </div>
@@ -413,15 +414,15 @@ const CreateQuiz: React.FC = () => {
 
           {/* Material Name */}
           <div className="mb-6">
-            <label htmlFor="materialName" className="block text-sm font-semibold text-primary-900 mb-2">
-              Material Name <span className="text-primary-500">(Optional)</span>
+            <label htmlFor="materialName" className="block text-sm font-semibold text-on-background mb-2">
+              Material Name <span className="text-on-background/50">(Optional)</span>
             </label>
             <input
               type="text"
               id="materialName"
               value={materialName}
               onChange={(e) => setMaterialName(e.target.value)}
-              className="w-full px-4 py-3 border border-primary-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 bg-white"
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 bg-surface"
               placeholder="Give your material a descriptive name"
             />
           </div>
@@ -429,7 +430,7 @@ const CreateQuiz: React.FC = () => {
           {/* Material Content */}
           {materialType === 'text' && (
             <div className="mb-6">
-              <label htmlFor="textContent" className="block text-sm font-semibold text-primary-900 mb-2">
+              <label htmlFor="textContent" className="block text-sm font-semibold text-on-background mb-2">
                 Study Material Content
               </label>
               <textarea
@@ -437,16 +438,16 @@ const CreateQuiz: React.FC = () => {
                 value={textContent}
                 onChange={(e) => setTextContent(e.target.value)}
                 rows={8}
-                className="w-full px-4 py-3 border border-primary-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 bg-white resize-vertical"
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 bg-surface resize-vertical"
                 placeholder="Paste your study material, notes, or any text content here..."
                 required
                 maxLength={10000}
               />
               <div className="flex justify-between items-center mt-2 text-sm">
-                <span className={`${textContent.length < 100 ? 'text-red-600' : 'text-primary-600'}`}>
+                <span className={`${textContent.length < 100 ? 'text-red-600' : 'text-on-background/60'}`}>
                   Minimum 100 characters required
                 </span>
-                <span className={`font-medium ${textContent.length > 9000 ? 'text-red-600' : 'text-primary-600'}`}>
+                <span className={`font-medium ${textContent.length > 9000 ? 'text-red-600' : 'text-on-background/60'}`}>
                   {textContent.length}/10,000
                 </span>
               </div>
@@ -455,7 +456,7 @@ const CreateQuiz: React.FC = () => {
 
           {materialType === 'url' && (
             <div className="mb-6">
-              <label htmlFor="urlContent" className="block text-sm font-semibold text-primary-900 mb-2">
+              <label htmlFor="urlContent" className="block text-sm font-semibold text-on-background mb-2">
                 Webpage URL
               </label>
               <input
@@ -463,7 +464,7 @@ const CreateQuiz: React.FC = () => {
                 id="urlContent"
                 value={urlContent}
                 onChange={(e) => setUrlContent(e.target.value)}
-                className="w-full px-4 py-3 border border-primary-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 bg-white"
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 bg-surface"
                 placeholder="https://example.com/article"
                 required
               />
@@ -476,10 +477,10 @@ const CreateQuiz: React.FC = () => {
 
           {materialType === 'pdf' && (
             <div className="mb-6">
-              <label htmlFor="pdfFile" className="block text-sm font-semibold text-primary-900 mb-2">
+              <label htmlFor="pdfFile" className="block text-sm font-semibold text-on-background mb-2">
                 PDF File
               </label>
-              <div className="border-2 border-dashed border-primary-200 rounded-lg p-6 text-center hover:border-primary-300 transition-colors">
+              <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
                 <input
                   type="file"
                   id="pdfFile"
@@ -489,12 +490,12 @@ const CreateQuiz: React.FC = () => {
                   required
                 />
                 <label htmlFor="pdfFile" className="cursor-pointer">
-                  <HiCloudArrowUp className="w-8 h-8 text-primary-500 mx-auto mb-2" />
-                  <div className="text-primary-900 font-medium mb-1">Click to upload PDF</div>
-                  <div className="text-sm text-primary-600">or drag and drop</div>
+                  <HiCloudArrowUp className="w-8 h-8 text-primary mx-auto mb-2" />
+                  <div className="text-on-background font-medium mb-1">Click to upload PDF</div>
+                  <div className="text-sm text-on-background/60">or drag and drop</div>
                 </label>
                 {pdfFile && (
-                  <div className="mt-4 p-2 bg-primary-50 rounded text-sm text-primary-700">
+                  <div className="mt-4 p-2 bg-primary/10 rounded text-sm text-primary">
                     Selected: {pdfFile.name}
                   </div>
                 )}
@@ -505,11 +506,12 @@ const CreateQuiz: React.FC = () => {
               </p>
             </div>
           )}
+          
 
           {/* Quiz Settings */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
             <div>
-              <label htmlFor="questionCount" className="block text-sm font-semibold text-primary-900 mb-2">
+              <label htmlFor="questionCount" className="block text-sm font-semibold text-on-background mb-2">
                 Number of Questions
               </label>
               <input
@@ -519,16 +521,16 @@ const CreateQuiz: React.FC = () => {
                 onChange={(e) => setQuestionCount(Math.max(1, Math.min(100, Number(e.target.value) || 1)))}
                 min={1}
                 max={100}
-                className="w-full px-4 py-3 border border-primary-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 bg-white"
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 bg-surface"
                 placeholder="Enter number of questions"
               />
-              <p className="text-xs text-primary-600 mt-1">
+              <p className="text-xs text-on-background/60 mt-1">
                 Enter any number between 1-100 questions
               </p>
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-primary-900 mb-2">
+              <label className="block text-sm font-semibold text-on-background mb-2">
                 Question Type
               </label>
               <div className="space-y-2">
@@ -541,12 +543,12 @@ const CreateQuiz: React.FC = () => {
                     onClick={() => setQuestionType(type)}
                     className={`w-full p-3 rounded-lg border-2 transition-all duration-200 text-left ${
                       questionType === type
-                        ? 'border-primary-500 bg-gray-300 shadow-md'
-                        : 'border-primary-200 bg-white hover:border-primary-300'
+                        ? 'border-primary bg-primary/10 shadow-md'
+                        : 'border-gray-200 bg-surface hover:border-primary/50'
                     }`}
                   >
-                    <div className="font-medium text-primary-900">{label}</div>
-                    <div className="text-sm text-primary-600">{desc}</div>
+                    <div className="font-medium text-on-background">{label}</div>
+                    <div className="text-sm text-on-background/60">{desc}</div>
                   </button>
                 ))}
               </div>
@@ -557,7 +559,7 @@ const CreateQuiz: React.FC = () => {
           <button
             onClick={handleGenerateQuiz}
             disabled={loading || (materialType === 'text' && textContent.trim().length < 100)}
-            className="w-full inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-primary-500 to-primary-600 text-black font-semibold text-lg rounded-lg hover:from-primary-600 hover:to-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+            className="w-full inline-flex items-center justify-center px-8 py-10  font-semibold text-lg rounded-lg hover:from-primary/90 hover:to-secondary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
           >
             {loading ? (
               <>
@@ -573,7 +575,7 @@ const CreateQuiz: React.FC = () => {
           </button>
 
           <div className="text-center mt-4">
-            <p className="text-sm text-primary-600">
+            <p className="text-sm text-on-background/60">
               {import.meta.env.VITE_GEMINI_API_KEY ?
                 'AI-powered quiz generation with intelligent question creation' :
                 'Sample questions will be generated (add API key for AI features)'
@@ -591,10 +593,13 @@ const CreateQuiz: React.FC = () => {
               </div>
             </div>
           )}
+          
+          
         </div>
       </div>
     </div>
   )
 }
+          
 
 export default CreateQuiz

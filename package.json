@@ -10,8 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@tailwindcss/vite": "^4.1.18",
     "@google/generative-ai": "^0.21.0",
+    "@tailwindcss/vite": "^4.1.18",
     "pdfjs-dist": "^4.8.69",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
