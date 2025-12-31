@@ -17,15 +17,6 @@ const MaterialCard: React.FC<MaterialCardProps> = ({ material, onDelete }) => {
     }
   }
 
-  const getIcon = () => {
-    switch (material.type) {
-      case 'pdf': return HiDocument
-      case 'url': return HiLink
-      case 'text': return HiDocumentText
-      default: return HiDocument
-    }
-  }
-
   const getTypeLabel = () => {
     switch (material.type) {
       case 'pdf': return 'PDF Document'
@@ -44,7 +35,14 @@ const MaterialCard: React.FC<MaterialCardProps> = ({ material, onDelete }) => {
     }
   }
 
-  const Icon = getIcon()
+  const Icon = React.useMemo(() => {
+    switch (material.type) {
+      case 'pdf': return HiDocument
+      case 'url': return HiLink
+      case 'text': return HiDocumentText
+      default: return HiDocument
+    }
+  }, [material.type])
 
   return (
     <div className="group bg-surface rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl hover:border-gray-200 transition-all duration-300 transform hover:-translate-y-1">

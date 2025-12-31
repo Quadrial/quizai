@@ -20,11 +20,12 @@ export async function testGeminiAPI(): Promise<{ success: boolean; error?: strin
     console.log('API Test Response:', text)
     
     return { success: true }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('API Test Error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return { 
       success: false, 
-      error: error.message || 'Unknown error'
+      error: errorMessage
     }
   }
 }

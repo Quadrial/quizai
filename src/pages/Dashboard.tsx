@@ -68,18 +68,18 @@ const Dashboard: React.FC = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-6 sm:p-8 text-center">
+      <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-green-50 to-yellow-100 flex items-center justify-center px-4">
+        <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-6 sm:p-8 text-center border border-yellow-200">
           <div className="mb-6">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 mb-4">
-              <HiUser className="w-8 h-8 text-blue-600" />
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-yellow-400 to-green-500 mb-4">
+              <HiUser className="w-8 h-8 text-white" />
             </div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Access Required</h2>
-            <p className="text-gray-600">Please sign in to view your dashboard</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-yellow-800 mb-2">Access Required</h2>
+            <p className="text-green-700">Please sign in to view your dashboard</p>
           </div>
           <Link
             to="/login"
-            className="w-full inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+            className="w-full inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-yellow-500 to-green-600 text-white rounded-xl font-semibold hover:from-yellow-600 hover:to-green-700 transition-all duration-200 shadow-soft"
           >
             Sign In →
           </Link>
@@ -90,7 +90,7 @@ const Dashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-green-50 to-yellow-100 flex items-center justify-center">
         <LoadingSpinner size="lg" text="Loading your dashboard..." />
       </div>
     )
@@ -107,7 +107,7 @@ const Dashboard: React.FC = () => {
                 <div className="w-10 h-10 bg-gradient-to-r from-primary to-secondary rounded-xl flex items-center justify-center">
                   <HiChartBar className="w-6 h-6 text-on-primary" />
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-on-background">
+                <h1 className="text-2xl sm:text-3xl font-bold text-yellow-800">
                   Dashboard
                   {user.isGuest && (
                     <span className="ml-3 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-amber-100 text-amber-800">
@@ -116,7 +116,7 @@ const Dashboard: React.FC = () => {
                   )}
                 </h1>
               </div>
-              <p className="text-on-background/60 text-lg">
+              <p className="text-green-700 text-lg">
                 Manage your quizzes and study materials
               </p>
             </div>
