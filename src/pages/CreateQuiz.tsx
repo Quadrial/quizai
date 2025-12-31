@@ -31,6 +31,7 @@ const CreateQuiz: React.FC = () => {
   const [pdfFile, setPdfFile] = useState<File | null>(null)
   const [questionCount, setQuestionCount] = useState(10)
   const [questionType, setQuestionType] = useState<'multiple-choice' | 'true-false'>('multiple-choice')
+  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard' | 'technical'>('medium')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [apiTestResult, setApiTestResult] = useState('')
@@ -88,7 +89,7 @@ const CreateQuiz: React.FC = () => {
       await dataService.saveMaterial(material, user.id)
 
       // Generate quiz
-      const quiz = await quizService.generateQuiz(material, questionCount, questionType)
+      const quiz = await quizService.generateQuiz(material, questionCount, questionType, difficulty)
       
       // Save the quiz and navigate directly to take it
       await dataService.saveQuiz(quiz, user.id)
@@ -356,7 +357,7 @@ const CreateQuiz: React.FC = () => {
               </div>
               <p className="text-sm text-amber-600 mt-2 flex items-center">
                 <HiExclamationTriangle className="w-4 h-4 mr-1" />
-                PDF text extraction is not fully implemented yet
+                URL content extraction is not fully implemented yet
               </p>
             </div>
           )}
@@ -385,9 +386,38 @@ const CreateQuiz: React.FC = () => {
 
             <div>
               <label className="block text-sm font-semibold text-on-background mb-2">
-                Question Type
+                Difficulty Level
               </label>
               <div className="space-y-2">
+                {[
+                  { level: 'easy' as const, label: 'Easy', desc: 'Basic concepts & definitions' },
+                  { level: 'medium' as const, label: 'Medium', desc: 'Intermediate understanding' },
+                  { level: 'hard' as const, label: 'Hard', desc: 'Complex analysis & thinking' },
+                  { level: 'technical' as const, label: 'Technical', desc: 'Expert-level knowledge' }
+                ].map(({ level, label, desc }) => (
+                  <button
+                    key={level}
+                    onClick={() => setDifficulty(level)}
+                    className={`w-full p-3 rounded-lg border-2 transition-all duration-200 text-left ${
+                      difficulty === level
+                        ? 'border-primary bg-primary/10 shadow-md'
+                        : 'border-gray-200 bg-surface hover:border-primary/50'
+                    }`}
+                  >
+                    <div className="font-medium text-on-background">{label}</div>
+                    <div className="text-sm text-on-background/60">{desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-1 gap-6 mb-8">
+            <div>
+              <label className="block text-sm font-semibold text-on-background mb-2">
+                Question Type
+              </label>
+              <div className="grid grid-cols-2 gap-4">
                 {[
                   { type: 'multiple-choice' as const, label: 'Multiple Choice', desc: '4 options per question' },
                   { type: 'true-false' as const, label: 'True/False', desc: 'Simple yes/no questions' }
@@ -395,7 +425,7 @@ const CreateQuiz: React.FC = () => {
                   <button
                     key={type}
                     onClick={() => setQuestionType(type)}
-                    className={`w-full p-3 rounded-lg border-2 transition-all duration-200 text-left ${
+                    className={`p-3 rounded-lg border-2 transition-all duration-200 text-left ${
                       questionType === type
                         ? 'border-primary bg-primary/10 shadow-md'
                         : 'border-gray-200 bg-surface hover:border-primary/50'

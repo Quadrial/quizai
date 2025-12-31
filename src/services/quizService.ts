@@ -1,21 +1,25 @@
 // Real Gemini AI integration
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import * as pdfjsLib from 'pdfjs-dist'
 import type { Quiz, Question, StudyMaterial } from '../types'
+
+// Set up PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
 
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY)
 
 export class QuizService {
   private model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
 
-  async generateQuiz(material: StudyMaterial, questionCount: number = 5, questionType: 'multiple-choice' | 'true-false' = 'multiple-choice'): Promise<Quiz> {
+  async generateQuiz(material: StudyMaterial, questionCount: number = 5, questionType: 'multiple-choice' | 'true-false' = 'multiple-choice', difficulty: 'easy' | 'medium' | 'hard' | 'technical' = 'medium'): Promise<Quiz> {
     // Check if API key is available
     if (!import.meta.env.VITE_GEMINI_API_KEY) {
       console.warn('Gemini API key not found, using mock data')
-      return this.generateMockQuiz(material, questionCount, questionType)
+      return this.generateMockQuiz(material, questionCount, questionType, difficulty)
     }
 
     try {
-      const prompt = this.createPrompt(material.content, questionCount, questionType)
+      const prompt = this.createPrompt(material.content, questionCount, questionType, difficulty)
       
       // Use the simpler generateContent method
       const result = await this.model.generateContent(prompt)
@@ -37,11 +41,11 @@ export class QuizService {
     } catch (error) {
       console.error('Error generating quiz with AI:', error)
       console.log('Falling back to mock data')
-      return this.generateMockQuiz(material, questionCount, questionType)
+      return this.generateMockQuiz(material, questionCount, questionType, difficulty)
     }
   }
 
-  private generateMockQuiz(material: StudyMaterial, questionCount: number, questionType: 'multiple-choice' | 'true-false'): Quiz {
+  private generateMockQuiz(material: StudyMaterial, questionCount: number, questionType: 'multiple-choice' | 'true-false', difficulty: 'easy' | 'medium' | 'hard' | 'technical'): Quiz {
     // Generate questions based on questionCount and questionType
     const questions: Question[] = []
     for (let i = 0; i < questionCount; i++) {
@@ -49,7 +53,7 @@ export class QuizService {
         const isTrue = Math.random() > 0.5
         questions.push({
           id: `q${i + 1}`,
-          question: `Sample true/false statement ${i + 1} about: ${material.name}?`,
+          question: `Sample ${difficulty} level true/false statement ${i + 1} about: ${material.name}?`,
           options: ['True', 'False'],
           correctAnswer: isTrue ? 0 : 1,
           explanation: `This statement is ${isTrue ? 'true' : 'false'} because it relates to the content about ${material.name}`,
@@ -58,7 +62,7 @@ export class QuizService {
       } else {
         questions.push({
           id: `q${i + 1}`,
-          question: `Sample multiple-choice question ${i + 1} about: ${material.name}?`,
+          question: `Sample ${difficulty} level multiple-choice question ${i + 1} about: ${material.name}?`,
           options: [
             `Correct answer for question ${i + 1}`,
             `Incorrect option A for question ${i + 1}`,
@@ -82,20 +86,32 @@ export class QuizService {
     }
   }
 
-  private createPrompt(content: string, questionCount: number, questionType: 'multiple-choice' | 'true-false'): string {
+  private createPrompt(content: string, questionCount: number, questionType: 'multiple-choice' | 'true-false', difficulty: 'easy' | 'medium' | 'hard' | 'technical'): string {
+    const difficultyDescriptions = {
+      easy: 'basic concepts, definitions, and simple facts',
+      medium: 'intermediate understanding, relationships between concepts, and practical applications',
+      hard: 'complex analysis, critical thinking, and advanced concepts',
+      technical: 'detailed technical knowledge, specific terminology, and expert-level understanding'
+    }
+
+    const strictInstructions = `CRITICAL: You MUST create questions that are based EXCLUSIVELY on the provided content. Do NOT use general knowledge, external information, or assumptions. If the content doesn't contain enough information for a question, create simpler questions from what's available. Every question must be directly derived from the text provided.`
+
     if (questionType === 'true-false') {
-      return `You are an expert quiz generator. Create a high-quality true/false quiz based on the provided content.
+      return `You are an expert quiz generator. Create a high-quality true/false quiz based EXCLUSIVELY on the provided content.
 
 CONTENT:
-${content.substring(0, 3000)} ${content.length > 3000 ? '...' : ''}
+${content}
 
-TASK: Generate exactly ${questionCount} true/false questions.
+${strictInstructions}
+
+TASK: Generate exactly ${questionCount} true/false questions at ${difficulty} level (${difficultyDescriptions[difficulty]}).
 
 REQUIREMENTS:
-- Each question must be a statement that can be answered as true or false
-- Questions should test understanding, not just memorization
-- Include clear explanations for correct answers
-- Make statements based directly on the content
+- Each question must be a statement that can be answered as true or false BASED ONLY ON THE CONTENT ABOVE
+- Questions should test ${difficultyDescriptions[difficulty]}
+- Include clear explanations for correct answers that reference the content
+- Make statements based directly on facts, concepts, or information explicitly stated in the content
+- Do NOT invent information, use external knowledge, or make assumptions
 
 RESPONSE FORMAT: Return ONLY a valid JSON object with this exact structure:
 {
@@ -112,20 +128,23 @@ RESPONSE FORMAT: Return ONLY a valid JSON object with this exact structure:
 
 Generate exactly ${questionCount} questions. Return only the JSON, no additional text.`
     } else {
-      return `You are an expert quiz generator. Create a high-quality multiple-choice quiz based on the provided content.
+      return `You are an expert quiz generator. Create a high-quality multiple-choice quiz based EXCLUSIVELY on the provided content.
 
 CONTENT:
-${content.substring(0, 3000)} ${content.length > 3000 ? '...' : ''}
+${content}
 
-TASK: Generate exactly ${questionCount} multiple-choice questions.
+${strictInstructions}
+
+TASK: Generate exactly ${questionCount} multiple-choice questions at ${difficulty} level (${difficultyDescriptions[difficulty]}).
 
 REQUIREMENTS:
 - Each question must have exactly 4 options
 - Only one option should be correct
-- Questions should test understanding, not just memorization
-- Include clear explanations for correct answers
-- Make incorrect options plausible but clearly wrong
-- Questions should be directly related to the content
+- Questions should test ${difficultyDescriptions[difficulty]}
+- Include clear explanations for correct answers that reference the content
+- Make incorrect options plausible but clearly wrong based on the content
+- Questions should be directly related to facts, concepts, or information explicitly stated in the content
+- Do NOT invent information, use external knowledge, or make assumptions
 
 RESPONSE FORMAT: Return ONLY a valid JSON object with this exact structure:
 {
@@ -209,9 +228,37 @@ Generate exactly ${questionCount} questions. Return only the JSON, no additional
   }
 
   async extractTextFromPDF(file: File): Promise<string> {
-    // For now, return a placeholder. In production, you'd use a PDF parsing library
-    // or send to a serverless function that handles PDF extraction
-    return `PDF content extraction not implemented yet. File: ${file.name}`
+    try {
+      const arrayBuffer = await file.arrayBuffer()
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+      
+      let fullText = ''
+      
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum)
+        const textContent = await page.getTextContent()
+        
+        const pageText = textContent.items
+          .map((item) => 'str' in item ? item.str : '')
+          .join(' ')
+          .replace(/\s+/g, ' ') // Normalize whitespace
+          .trim()
+        
+        if (pageText) {
+          fullText += pageText + '\n\n'
+        }
+      }
+      
+      if (!fullText.trim()) {
+        throw new Error('No text content found in PDF. The PDF might contain only images or be scanned.')
+      }
+      
+      return fullText.trim()
+    } catch (error) {
+      console.error('Error extracting text from PDF:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      throw new Error(`Failed to extract text from PDF: ${errorMessage}`)
+    }
   }
 
   async extractTextFromURL(url: string): Promise<string> {
@@ -220,6 +267,7 @@ Generate exactly ${questionCount} questions. Return only the JSON, no additional
       // For now, return a placeholder
       return `URL content extraction not implemented yet. URL: ${url}`
     } catch (error) {
+      console.error('Error extracting content from URL:', error)
       throw new Error('Failed to extract content from URL')
     }
   }
