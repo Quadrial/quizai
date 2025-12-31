@@ -86,13 +86,21 @@ const TakeQuiz: React.FC = () => {
     if (!quiz) return 0
     
     let correct = 0
+    let answered = 0
+    
     quiz.questions.forEach((question, index) => {
-      if (answers[index] === question.correctAnswer) {
-        correct++
+      if (answers[index] !== -1) { // Only count answered questions
+        answered++
+        if (answers[index] === question.correctAnswer) {
+          correct++
+        }
       }
     })
     
-    return Math.round((correct / quiz.questions.length) * 100)
+    // If no questions were answered, return 0
+    if (answered === 0) return 0
+    
+    return Math.round((correct / answered) * 100)
   }
 
   const getScoreColor = (score: number): string => {
@@ -186,7 +194,8 @@ const TakeQuiz: React.FC = () => {
 
   if (showResults) {
     const score = calculateScore()
-    const correctCount = quiz.questions.filter((q, i) => answers[i] === q.correctAnswer).length
+    const correctCount = quiz.questions.filter((q, i) => answers[i] !== -1 && answers[i] === q.correctAnswer).length
+    const answeredCount = quiz.questions.filter((_, i) => answers[i] !== -1).length
 
     return (
       <div className="min-h-screen bg-background py-8 px-4">
@@ -215,7 +224,12 @@ const TakeQuiz: React.FC = () => {
                 {score}%
               </div>
               <div className="text-xl text-on-background/70 mb-3 font-medium">
-                {correctCount} out of {quiz.questions.length} correct
+                {correctCount} out of {answeredCount} answered correctly
+                {answeredCount < quiz.questions.length && (
+                  <span className="block text-sm text-on-background/50 mt-1">
+                    ({quiz.questions.length - answeredCount} questions skipped)
+                  </span>
+                )}
               </div>
               <div className="text-lg text-on-background/60">
                 {score >= 90 ? 'Outstanding performance! 🏆' :
@@ -459,8 +473,7 @@ const TakeQuiz: React.FC = () => {
             {currentQuestion === quiz.questions.length - 1 ? (
               <button
                 onClick={handleSubmit}
-                disabled={answers.includes(-1)}
-                className="inline-flex items-center justify-center w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold text-lg rounded-xl hover:from-green-600 hover:to-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                className="inline-flex items-center justify-center w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold text-lg rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
               >
                 <HiCheckCircle className="w-6 h-6 mr-3" />
                 Submit Quiz
@@ -476,18 +489,6 @@ const TakeQuiz: React.FC = () => {
             )}
           </div>
         </div>
-
-        {/* Warning Message */}
-        {answers.includes(-1) && currentQuestion === quiz.questions.length - 1 && (
-          <div className="mt-8 p-4 bg-red-50 border border-red-200 rounded-xl">
-            <div className="flex items-center justify-center">
-              <HiExclamationTriangle className="w-5 h-5 text-red-600 mr-3" />
-              <p className="text-red-800 font-medium text-center">
-                Please answer all questions before submitting
-              </p>
-            </div>
-          </div>
-        )}
 
         {/* Mobile Progress Indicator */}
         <div className="sm:hidden mt-8 text-center">

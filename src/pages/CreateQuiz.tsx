@@ -5,17 +5,15 @@ import { quizService } from '../services/quizService'
 import { dataService } from '../services/dataService'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
-import { testGeminiAPI } from '../utils/testGemini'
 import type { StudyMaterial } from '../types'
+import * as pdfjsLib from 'pdfjs-dist'
 import {
   HiDocumentText,
   HiLink,
   HiCloudArrowUp,
   HiCheckCircle,
-  HiArrowRight,
   HiSparkles,
-  HiExclamationTriangle,
-  HiKey
+  HiExclamationTriangle
 } from 'react-icons/hi2'
 
 const CreateQuiz: React.FC = () => {
@@ -34,7 +32,8 @@ const CreateQuiz: React.FC = () => {
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard' | 'technical'>('medium')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [apiTestResult, setApiTestResult] = useState('')
+  const [pdfProcessing, setPdfProcessing] = useState(false)
+  const [pdfProgress, setPdfProgress] = useState(0)
 
   // Check if we have a pre-selected material from dashboard
   useEffect(() => {
@@ -68,7 +67,11 @@ const CreateQuiz: React.FC = () => {
         content = await quizService.extractTextFromURL(urlContent)
         name = name || urlContent
       } else if (materialType === 'pdf' && pdfFile) {
+        setPdfProcessing(true)
+        setPdfProgress(10)
         content = await quizService.extractTextFromPDF(pdfFile)
+        setPdfProgress(100)
+        setPdfProcessing(false)
         name = name || pdfFile.name
       }
 
@@ -105,13 +108,55 @@ const CreateQuiz: React.FC = () => {
 
 
 
-  const handleTestAPI = async () => {
-    setApiTestResult('Testing...')
-    const result = await testGeminiAPI()
-    if (result.success) {
-      setApiTestResult('✅ API key is working!')
-    } else {
-      setApiTestResult(`❌ API Error: ${result.error}`)
+  const handlePdfFileSelect = async (file: File | null) => {
+    if (!file) {
+      setPdfFile(null)
+      setPdfProgress(0)
+      return
+    }
+
+    // Validate file type
+    if (!file.type.includes('pdf')) {
+      setError('Please select a valid PDF file')
+      return
+    }
+
+    // Validate file size (50MB limit)
+    if (file.size > 50 * 1024 * 1024) {
+      setError('PDF file size must be less than 50MB')
+      return
+    }
+
+    setPdfFile(file)
+    setPdfProcessing(true)
+    setPdfProgress(10)
+    setError('')
+
+    try {
+      // Simulate processing progress
+      setPdfProgress(30)
+      
+      // Basic validation - check if file can be read
+      const arrayBuffer = await file.arrayBuffer()
+      setPdfProgress(60)
+      
+      // Try to load with PDF.js to validate
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+      setPdfProgress(90)
+      
+      // Get basic info
+      const numPages = pdf.numPages
+      setPdfProgress(100)
+      
+      console.log(`PDF validated: ${numPages} pages, ${file.size} bytes`)
+      
+    } catch (err) {
+      console.error('PDF validation error:', err)
+      setError('Invalid or corrupted PDF file. Please try a different file.')
+      setPdfFile(null)
+      setPdfProgress(0)
+    } finally {
+      setPdfProcessing(false)
     }
   }
 
@@ -188,55 +233,6 @@ const CreateQuiz: React.FC = () => {
         )}
 
         <div className="bg-surface rounded-2xl shadow-xl p-8 border border-gray-100">
-          {/* API Test Section */}
-          <div className="mb-8 p-6 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl border border-primary/20">
-            <div className="flex items-center mb-4">
-              <HiKey className="w-5 h-5 text-primary mr-2" />
-              <h3 className="text-lg font-semibold text-on-background">API Configuration</h3>
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-4">
-              <button
-                onClick={handleTestAPI}
-                className="inline-flex items-center px-4 py-2 bg-primary text-on-primary text-sm font-medium rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-200"
-              >
-                Test Gemini API
-              </button>
-              {apiTestResult && (
-                <span className="text-sm text-on-background/70 font-medium">{apiTestResult}</span>
-              )}
-            </div>
-
-            {!import.meta.env.VITE_GEMINI_API_KEY && (
-              <div className="flex items-start p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                <HiExclamationTriangle className="w-5 h-5 text-amber-600 mr-3 mt-0.5 flex-shrink-0" />
-                <div className="text-sm text-amber-800">
-                  <p className="font-medium mb-1">API Key Required</p>
-                  <p>Add <code className="bg-amber-100 px-1 py-0.5 rounded text-xs">VITE_GEMINI_API_KEY</code> to your .env file to enable AI quiz generation.</p>
-                  <a
-                    href="https://makersuite.google.com/app/apikey"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center text-primary hover:text-primary/90 font-medium mt-2"
-                  >
-                    Get your free API key <HiArrowRight className="w-4 h-4 ml-1" />
-                  </a>
-                </div>
-              </div>
-            )}
-
-            {import.meta.env.VITE_GEMINI_API_KEY && import.meta.env.VITE_GEMINI_API_KEY.length < 35 && (
-              <div className="flex items-start p-4 bg-red-50 border border-red-200 rounded-lg">
-                <HiExclamationTriangle className="w-5 h-5 text-red-600 mr-3 mt-0.5 flex-shrink-0" />
-                <div className="text-sm text-red-800">
-                  <p className="font-medium mb-1">Invalid API Key</p>
-                  <p>Gemini API keys are typically 39 characters long. Please check your key.</p>
-                </div>
-              </div>
-            )}
-          </div>
-          
-
           {/* Material Type Selection */}
           <div className="mb-8">
             <label className="block text-lg font-semibold text-on-background mb-4">
@@ -340,7 +336,7 @@ const CreateQuiz: React.FC = () => {
                   type="file"
                   id="pdfFile"
                   accept=".pdf"
-                  onChange={(e) => setPdfFile(e.target.files?.[0] || null)}
+                  onChange={(e) => handlePdfFileSelect(e.target.files?.[0] || null)}
                   className="hidden"
                   required
                 />
@@ -351,7 +347,22 @@ const CreateQuiz: React.FC = () => {
                 </label>
                 {pdfFile && (
                   <div className="mt-4 p-2 bg-primary/10 rounded text-sm text-primary">
-                    Selected: {pdfFile.name}
+                    Selected: {pdfFile.name} ({(pdfFile.size / 1024 / 1024).toFixed(1)} MB)
+                  </div>
+                )}
+                {pdfProcessing && (
+                  <div className="mt-4">
+                    <div className="flex items-center justify-center mb-2">
+                      <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin mr-2"></div>
+                      <span className="text-sm text-primary font-medium">Processing PDF...</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-primary h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${pdfProgress}%` }}
+                      ></div>
+                    </div>
+                    <div className="text-xs text-on-background/60 mt-1">{pdfProgress}% complete</div>
                   </div>
                 )}
               </div>
@@ -373,14 +384,14 @@ const CreateQuiz: React.FC = () => {
                 type="number"
                 id="questionCount"
                 value={questionCount}
-                onChange={(e) => setQuestionCount(Math.max(1, Math.min(100, Number(e.target.value) || 1)))}
+                onChange={(e) => setQuestionCount(Math.max(1, Math.min(1000, Number(e.target.value) || 1)))}
                 min={1}
-                max={100}
+                max={1000}
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 bg-surface"
                 placeholder="Enter number of questions"
               />
               <p className="text-xs text-on-background/60 mt-1">
-                Enter any number between 1-100 questions
+                Enter any number between 1-1000 questions
               </p>
             </div>
 
