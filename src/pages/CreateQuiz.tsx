@@ -645,7 +645,8 @@ const CreateQuiz: React.FC = () => {
       setPdfProgress(30)
       const arrayBuffer = await file.arrayBuffer()
       setPdfProgress(60)
-
+      
+      // Try to load with PDF.js to validate
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
       setPdfProgress(90)
 
