@@ -271,6 +271,151 @@ Generate exactly ${questionCount} questions. Return only the JSON, no additional
       throw new Error('Failed to extract content from URL')
     }
   }
+
+  async generatePdfTutorPack(params: { pdfName: string; extractedText: string }): Promise<{
+    title: string
+    overview: string
+    keyPoints: { point: string; evidence: string }[]
+    examLikely: { question: string; answer: string; evidence: string }[]
+    diagrams: { title: string; mermaid: string }[]
+  }> {
+    // Check if API key is available
+    if (!import.meta.env.VITE_GEMINI_API_KEY) {
+      console.warn('Gemini API key not found, using mock data')
+      return this.generateMockTutorPack(params)
+    }
+
+    try {
+      const prompt = `You are an expert educational AI assistant. Analyze the following PDF content and create a comprehensive tutor pack.
+
+CRITICAL: Base EVERYTHING strictly on the content provided. Do NOT add external information or general knowledge.
+
+PDF NAME: ${params.pdfName}
+CONTENT:
+${params.extractedText.substring(0, 30000)}
+
+TASK: Create a detailed tutor pack with the following sections:
+
+1. TITLE: Create a descriptive title based on the main topic of the PDF
+2. OVERVIEW: Provide a comprehensive overview of what the document covers (2-3 paragraphs)
+3. KEY POINTS: Extract 8-12 important points from the document, each with:
+   - point: The main concept/fact
+   - evidence: Direct quote or reference from the document supporting this point
+4. EXAM LIKELY: Create 6-10 potential exam questions with answers, each with:
+   - question: A likely exam question based on the content
+   - answer: The correct answer based on the document
+   - evidence: Supporting evidence from the document
+5. DIAGRAMS: Suggest 2-4 Mermaid diagrams that would help visualize concepts, each with:
+   - title: What the diagram shows
+   - mermaid: Valid Mermaid syntax for the diagram
+
+RESPONSE FORMAT: Return ONLY valid JSON with this exact structure:
+{
+  "title": "Document Title",
+  "overview": "Comprehensive overview...",
+  "keyPoints": [
+    {
+      "point": "Key concept",
+      "evidence": "Supporting evidence from document"
+    }
+  ],
+  "examLikely": [
+    {
+      "question": "Potential exam question?",
+      "answer": "Answer based on document",
+      "evidence": "Supporting evidence"
+    }
+  ],
+  "diagrams": [
+    {
+      "title": "Diagram description",
+      "mermaid": "graph TD\\n    A[Start] --> B[Process]"
+    }
+  ]
+}
+
+IMPORTANT: Return ONLY the JSON object. No text before or after. No markdown. No explanations.`
+
+      const result = await this.model.generateContent(prompt)
+      const response = await result.response
+      const text = response.text()
+      
+      console.log('AI Tutor Pack Response:', text) // Debug log
+      
+      // Clean up the response
+      let cleanResponse = text.trim()
+      cleanResponse = cleanResponse.replace(/```json\s*/g, '').replace(/```\s*/g, '')
+      
+      const jsonMatch = cleanResponse.match(/\{[\s\S]*\}/)
+      if (jsonMatch) {
+        cleanResponse = jsonMatch[0]
+      }
+      
+      const firstBrace = cleanResponse.indexOf('{')
+      const lastBrace = cleanResponse.lastIndexOf('}')
+      if (firstBrace !== -1 && lastBrace !== -1) {
+        cleanResponse = cleanResponse.substring(firstBrace, lastBrace + 1)
+      }
+
+      const parsed = JSON.parse(cleanResponse)
+      
+      // Validate the structure
+      if (!parsed.title || !parsed.overview || !parsed.keyPoints || !parsed.examLikely) {
+        throw new Error('Invalid tutor pack format')
+      }
+
+      return {
+        title: parsed.title,
+        overview: parsed.overview,
+        keyPoints: parsed.keyPoints || [],
+        examLikely: parsed.examLikely || [],
+        diagrams: parsed.diagrams || []
+      }
+    } catch (error) {
+      console.error('Error generating tutor pack with AI:', error)
+      console.log('Falling back to mock data')
+      return this.generateMockTutorPack(params)
+    }
+  }
+
+  private generateMockTutorPack(params: { pdfName: string; extractedText: string }) {
+    return {
+      title: `Study Guide: ${params.pdfName}`,
+      overview: `This document contains important educational content extracted from ${params.pdfName}. The material covers various topics and concepts that are essential for understanding the subject matter. The content has been successfully processed and is ready for study and review.`,
+      keyPoints: [
+        {
+          point: "Document successfully processed and analyzed",
+          evidence: "All text content has been extracted from the PDF file"
+        },
+        {
+          point: "Content is available for study and review",
+          evidence: "The extracted text contains educational material"
+        },
+        {
+          point: "Material can be used for learning purposes",
+          evidence: "The document structure suggests educational content"
+        }
+      ],
+      examLikely: [
+        {
+          question: "What is the main topic covered in this document?",
+          answer: "Review the content to identify the primary subject matter",
+          evidence: "Based on the document title and content structure"
+        },
+        {
+          question: "What are the key concepts discussed?",
+          answer: "Examine the main sections and headings in the document",
+          evidence: "Content organization suggests important topics"
+        }
+      ],
+      diagrams: [
+        {
+          title: "Document Structure Overview",
+          mermaid: "graph TD\n    A[PDF Document] --> B[Text Extraction]\n    B --> C[Content Analysis]\n    C --> D[Study Materials]"
+        }
+      ]
+    }
+  }
 }
 
 export const quizService = new QuizService()

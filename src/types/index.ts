@@ -35,3 +35,11 @@ export interface StudyMaterial {
   uploadedAt: string;
 }
 
+export type PdfTutorPack = {
+  title: string
+  overview: string
+  keyPoints: { point: string; evidence: string }[]
+  examLikely: { question: string; answer: string; evidence: string }[]
+  diagrams: { title: string; mermaid: string }[]
+}
+

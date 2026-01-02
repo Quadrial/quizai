@@ -8,6 +8,8 @@ import TakeQuiz from './pages/TakeQuiz'
 import QuizPreview from './pages/QuizPreview'
 import Settings from './pages/Settings'
 import Login from './pages/Login'
+
+import StudyAssistant from './pages/StudyAssistant'
 import './App.css'
 
 function App() {
@@ -23,6 +25,8 @@ function App() {
             <Route path="/quiz/:id/preview" element={<QuizPreview />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/login" element={<Login />} />
+            
+            <Route path="/study-assistant" element={<StudyAssistant />} />
           </Routes>
         </Layout>
       </Router>

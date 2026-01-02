@@ -1,16 +1,17 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { dataService } from '../services/dataService'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
 import type { Quiz, Question } from '../types'
+import { HiArrowLeft, HiCalendar, HiCheckCircle, HiPlay, HiQuestionMarkCircle } from 'react-icons/hi2'
 
 const QuizPreview: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const { user } = useAuth()
   const navigate = useNavigate()
-  
+
   const [quiz, setQuiz] = useState<Quiz | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -27,8 +28,8 @@ const QuizPreview: React.FC = () => {
         }
         setQuiz(quizData)
       } catch (err) {
-        const error = err as Error
-        setError(error.message || 'Failed to load quiz')
+        const e = err as Error
+        setError(e.message || 'Failed to load quiz')
       } finally {
         setLoading(false)
       }
@@ -37,129 +38,162 @@ const QuizPreview: React.FC = () => {
     loadQuiz()
   }, [id, user])
 
+  const createdDate = useMemo(() => {
+    if (!quiz) return ''
+    return new Date(quiz.createdAt).toLocaleDateString()
+  }, [quiz])
+
+  const typeLabel = useMemo(() => {
+    if (!quiz) return ''
+    return quiz.type === 'multiple-choice' ? 'Multiple Choice' : 'True/False'
+  }, [quiz])
+
   if (!user) {
     return (
-      <div className="text-center">
-        <h2 className="text-2xl font-bold mb-4">Please sign in to view quizzes</h2>
-        <Link to="/login" className="text-blue-600 hover:text-blue-700">
-          Sign In →
-        </Link>
+      <div className="qa-empty qa-fadeIn">
+        <div className="qa-card qa-card__pad qa-empty__card">
+          <h2 className="qa-empty__title">Sign in required</h2>
+          <p className="qa-empty__text">Please sign in to view quiz previews.</p>
+          <Link to="/login" className="qa-btn qa-btn--primary qa-btn--full qa-btn--xl">
+            Sign In
+          </Link>
+        </div>
       </div>
     )
   }
 
   if (loading) {
-    return <LoadingSpinner size="lg" text="Loading quiz preview..." />
+    return (
+      <div className="qa-empty">
+        <LoadingSpinner size="lg" text="Loading quiz preview..." />
+      </div>
+    )
   }
 
   if (error) {
     return (
-      <div className="text-center">
-        <ErrorMessage 
-          message={error}
-          onRetry={() => navigate('/dashboard')}
-        />
-        <Link
-          to="/dashboard"
-          className="text-blue-600 hover:text-blue-700"
-        >
-          ← Back to Dashboard
-        </Link>
+      <div className="qa-empty qa-fadeIn">
+        <div className="qa-card qa-card__pad qa-empty__card">
+          <div className="qa-stack">
+            <ErrorMessage message={error} onRetry={() => navigate('/dashboard')} />
+            <Link to="/dashboard" className="qa-btn qa-btn--surface qa-btn--full">
+              <HiArrowLeft className="qa-ico qa-ico--btn" />
+              Back to Dashboard
+            </Link>
+          </div>
+        </div>
       </div>
     )
   }
 
   if (!quiz) {
     return (
-      <div className="text-center">
-        <h2 className="text-2xl font-bold mb-4">Quiz not found</h2>
-        <Link
-          to="/dashboard"
-          className="text-blue-600 hover:text-blue-700"
-        >
-          ← Back to Dashboard
-        </Link>
+      <div className="qa-empty qa-fadeIn">
+        <div className="qa-card qa-card__pad qa-empty__card">
+          <h2 className="qa-empty__title">Quiz not found</h2>
+          <p className="qa-empty__text">This quiz may have been removed.</p>
+          <Link to="/dashboard" className="qa-btn qa-btn--surface qa-btn--full">
+            <HiArrowLeft className="qa-ico qa-ico--btn" />
+            Back to Dashboard
+          </Link>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">{quiz.title}</h1>
-          <p className="text-gray-600 mt-1">
-            {quiz.questions.length} questions • Created {new Date(quiz.createdAt).toLocaleDateString()}
-          </p>
+    <div className="qa-quizPreview qa-fadeIn">
+      <header className="qa-pageHeader qa-pageHeader--split">
+        <div className="qa-pageHeader__left">
+          <div className="qa-heroIcon" aria-hidden="true">
+            <HiQuestionMarkCircle className="qa-ico qa-ico--lg" />
+          </div>
+
+          <div className="qa-truncate">
+            <h1 className="qa-pageTitle qa-clamp2">{quiz.title}</h1>
+            <div className="qa-previewMeta">
+              <span className={`qa-chip ${quiz.type === 'multiple-choice' ? 'qa-chip--primary' : 'qa-chip--secondary'}`}>
+                {typeLabel}
+              </span>
+              <span className="qa-previewMeta__item">
+                <HiQuestionMarkCircle className="qa-ico qa-ico--btn" />
+                {quiz.questions.length} questions
+              </span>
+              <span className="qa-previewMeta__item">
+                <HiCalendar className="qa-ico qa-ico--btn" />
+                Created {createdDate}
+              </span>
+            </div>
+          </div>
         </div>
-        <div className="flex space-x-3">
-          <Link
-            to={`/quiz/${quiz.id}`}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-          >
+
+        <div className="qa-pageHeader__actions">
+          <Link to={`/quiz/${quiz.id}`} className="qa-btn qa-btn--primary">
+            <HiPlay className="qa-ico qa-ico--btn" />
             Take Quiz
           </Link>
-          <Link
-            to="/dashboard"
-            className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors"
-          >
-            Back to Dashboard
+          <Link to="/dashboard" className="qa-btn qa-btn--surface">
+            <HiArrowLeft className="qa-ico qa-ico--btn" />
+            Dashboard
           </Link>
         </div>
-      </div>
+      </header>
 
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="space-y-8">
+      <section className="qa-card qa-card__pad">
+        <div className="qa-previewList">
           {quiz.questions.map((question: Question, index: number) => (
-            <div key={question.id} className="border-b pb-6 last:border-b-0">
-              <h3 className="font-semibold text-lg mb-4">
-                {index + 1}. {question.question}
-              </h3>
-              
-              <div className="space-y-3 mb-4">
-                {question.options.map((option: string, optionIndex: number) => (
-                  <div
-                    key={optionIndex}
-                    className={`p-3 rounded-lg border ${
-                      optionIndex === question.correctAnswer
-                        ? 'bg-green-50 border-green-200 text-green-800'
-                        : 'bg-gray-50 border-gray-200'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center">
-                        <span className="font-medium mr-3">
-                          {String.fromCharCode(65 + optionIndex)}.
-                        </span>
-                        {option}
-                      </span>
-                      {optionIndex === question.correctAnswer && (
-                        <span className="text-green-600 font-medium">✓ Correct</span>
+            <article key={question.id} className="qa-previewQ">
+              <div className="qa-previewQ__head">
+                <div className="qa-qNum" aria-hidden="true">
+                  {index + 1}
+                </div>
+                <h3 className="qa-previewQ__title">{question.question}</h3>
+              </div>
+
+              <div className="qa-previewQ__options" role="list">
+                {question.options.map((option: string, optionIndex: number) => {
+                  const isCorrect = optionIndex === question.correctAnswer
+                  return (
+                    <div
+                      key={optionIndex}
+                      role="listitem"
+                      className={`qa-option ${isCorrect ? 'qa-option--correct' : ''}`}
+                    >
+                      <div className="qa-option__left">
+                        <div className="qa-letter" aria-hidden="true">
+                          {String.fromCharCode(65 + optionIndex)}
+                        </div>
+                        <div className="qa-option__text">{option}</div>
+                      </div>
+
+                      {isCorrect && (
+                        <div className="qa-option__right" aria-label="Correct answer">
+                          <HiCheckCircle className="qa-ico qa-ico--btn" />
+                          <span>Correct</span>
+                        </div>
                       )}
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
-              
+
               {question.explanation && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="font-medium text-blue-900 mb-2">Explanation:</h4>
-                  <p className="text-blue-800 text-sm">{question.explanation}</p>
+                <div className="qa-expl">
+                  <div className="qa-expl__title">Explanation</div>
+                  <p className="qa-expl__text">{question.explanation}</p>
                 </div>
               )}
-            </div>
+            </article>
           ))}
         </div>
-      </div>
 
-      <div className="mt-6 text-center">
-        <Link
-          to={`/quiz/${quiz.id}`}
-          className="bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-medium hover:bg-blue-700 transition-colors"
-        >
-          Take This Quiz
-        </Link>
-      </div>
+        <div className="qa-previewFooter">
+          <Link to={`/quiz/${quiz.id}`} className="qa-btn qa-btn--primary qa-btn--xl">
+            <HiPlay className="qa-ico qa-ico--lg" />
+            Take this quiz
+          </Link>
+        </div>
+      </section>
     </div>
   )
 }
