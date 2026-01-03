@@ -44,7 +44,7 @@ export const studyAssistantService = {
       progressCallback?.(5, 'Loading PDF...')
       
       // Extract text from PDF with OCR support
-      const text = await this.extractTextFromPDFWithOCR(file, (prog, msg) => {
+      const { text, warning } = await this.extractTextFromPDFWithOCR(file, (prog, msg) => {
         progressCallback?.(5 + prog * 0.35, msg)
       })
 
@@ -61,6 +61,10 @@ export const studyAssistantService = {
       const studyContent = await this.generateStudyContent(text, (prog) => {
         progressCallback?.(40 + prog * 0.5, 'Generating study materials...')
       })
+
+      if (warning) {
+        studyContent.detailedExplanation = `**Warning:** ${warning}\n\n${studyContent.detailedExplanation}`
+      }
 
       // Generate images for visual aids
       progressCallback?.(90, 'Generating visual diagrams...')
@@ -79,7 +83,7 @@ export const studyAssistantService = {
   async extractTextFromPDFWithOCR(
   file: File,
   progressCallback?: (progress: number, message: string) => void
-): Promise<string> {
+): Promise<{ text: string, warning: string | null }> {
   progressCallback?.(10, 'Reading PDF structure...')
   
   const arrayBuffer = await file.arrayBuffer()
@@ -113,15 +117,16 @@ export const studyAssistantService = {
       pageTexts.push(result.value)
     } else {
       console.error(`Error processing page ${index + 1}:`, result.reason)
-      pageTexts.push(`[--- OCR failed for page ${index + 1} ---]`)
+      pageTexts.push(`\n\n[--- OCR for page ${index + 1} timed out after 30 seconds. The content of this page was not extracted. ---]\n\n`)
       failedPages++
     }
   })
 
   let fullText = pageTexts.join('\n\n')
+  let warning: string | null = null
 
   if (failedPages > 0) {
-    throw new Error(`OCR processing failed or timed out for ${failedPages} out of ${numPages} pages. The extracted text may be incomplete.`)
+    warning = `OCR processing failed or timed out for ${failedPages} out of ${numPages} pages. The extracted text may be incomplete.`
   }
 
   progressCallback?.(80, 'Finalizing text extraction...')
@@ -146,7 +151,7 @@ export const studyAssistantService = {
   console.log('Total extracted text length:', fullText.length)
   console.log('Sample of extracted text:', fullText.substring(0, 500))
   
-  return fullText
+  return { text: fullText, warning }
 },
 
 async _processPage(
@@ -227,6 +232,7 @@ async _processPage(
       }
     } catch (ocrError) {
       console.error(`OCR failed for page ${pageNum}:`, ocrError)
+      throw ocrError
     }
   }
   

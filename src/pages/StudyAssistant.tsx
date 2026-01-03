@@ -15,7 +15,8 @@ import {
   HiArrowPath,
   HiCheckCircle,
   HiBeaker,
-  HiClipboardDocumentList
+  HiClipboardDocumentList,
+  HiExclamationTriangle
 } from 'react-icons/hi2'
 
 interface KeyPoint {
@@ -51,6 +52,7 @@ const StudyAssistant: React.FC = () => {
   const [progress, setProgress] = useState(0)
   const [progressMessage, setProgressMessage] = useState('')
   const [error, setError] = useState('')
+  const [warning, setWarning] = useState('')
   const [studyContent, setStudyContent] = useState<StudyContent | null>(null)
   
   // Audio state
@@ -137,6 +139,7 @@ const StudyAssistant: React.FC = () => {
 
     setPdfFile(file)
     setError('')
+    setWarning('')
     setStudyContent(null)
   }
 
@@ -146,6 +149,7 @@ const StudyAssistant: React.FC = () => {
     setLoading(true)
     setProcessing(true)
     setError('')
+    setWarning('')
     setProgress(0)
 
     try {
@@ -156,6 +160,13 @@ const StudyAssistant: React.FC = () => {
           setProgressMessage(msg)
         }
       )
+
+      if (content.detailedExplanation.startsWith('**Warning:**')) {
+        const [warningPart, ...explanationParts] = content.detailedExplanation.split('\n\n')
+        const warningMsg = warningPart.replace('**Warning:**', '').trim()
+        setWarning(warningMsg)
+        content.detailedExplanation = explanationParts.join('\n\n')
+      }
 
       setStudyContent(content)
       setProgress(100)
@@ -519,6 +530,22 @@ const HighlightedText: React.FC<{
             </div>
           </div>
         </header>
+
+        {warning && (
+          <div className="qa-stack" style={{ marginBottom: 14 }}>
+            <div className="qa-callout qa-callout--warn">
+              <div className="qa-callout__row">
+                <div className="qa-alert__icon" style={{ background: 'var(--qa-warning)', boxShadow: '0 14px 34px rgb(var(--qa-warning-rgb) / 0.22)'}}>
+                  <HiExclamationTriangle className="qa-ico qa-ico--lg" />
+                </div>
+                <div className="qa-callout__body">
+                  <div className="qa-callout__title" style={{ color: 'rgb(var(--qa-warning-rgb) / 0.85)' }}>Warning</div>
+                  <p className="qa-callout__text" style={{ color: 'rgb(var(--qa-warning-rgb) / 0.75)' }}>{warning}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="qa-stack" style={{ marginBottom: 14 }}>
