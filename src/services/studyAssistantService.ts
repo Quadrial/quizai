@@ -2,6 +2,8 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import * as pdfjsLib from 'pdfjs-dist'
 import Tesseract from 'tesseract.js'
 
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
+
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || '')
 
 interface ProgressCallback {
