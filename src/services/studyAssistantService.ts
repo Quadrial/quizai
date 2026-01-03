@@ -104,8 +104,25 @@ export const studyAssistantService = {
     )
   )
 
-  const pageTexts = await Promise.all(pagePromises)
+  const pageResults = await Promise.allSettled(pagePromises)
+  const pageTexts: string[] = []
+  let failedPages = 0
+  
+  pageResults.forEach((result, index) => {
+    if (result.status === 'fulfilled') {
+      pageTexts.push(result.value)
+    } else {
+      console.error(`Error processing page ${index + 1}:`, result.reason)
+      pageTexts.push(`[--- OCR failed for page ${index + 1} ---]`)
+      failedPages++
+    }
+  })
+
   let fullText = pageTexts.join('\n\n')
+
+  if (failedPages > 0) {
+    throw new Error(`OCR processing failed or timed out for ${failedPages} out of ${numPages} pages. The extracted text may be incomplete.`)
+  }
 
   progressCallback?.(80, 'Finalizing text extraction...')
   
@@ -191,6 +208,8 @@ async _processPage(
       
       await page.render({ canvasContext: context, viewport }).promise
       
+      this._preprocessCanvasForOCR(canvas)
+
       const imageBlob = await new Promise<Blob>((resolve, reject) => {
         canvas.toBlob((blob) => {
           if (blob) {
@@ -212,6 +231,30 @@ async _processPage(
   }
   
   return pageText
+},
+
+_preprocessCanvasForOCR(canvas: HTMLCanvasElement) {
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+  const data = imageData.data
+
+  for (let i = 0; i < data.length; i += 4) {
+    // Grayscale
+    const avg = (data[i] + data[i + 1] + data[i + 2]) / 3
+    data[i] = avg
+    data[i + 1] = avg
+    data[i + 2] = avg
+
+    // Binarization (Thresholding)
+    const threshold = 128
+    const pixelValue = data[i] < threshold ? 0 : 255
+    data[i] = pixelValue
+    data[i + 1] = pixelValue
+    data[i + 2] = pixelValue
+  }
+  ctx.putImageData(imageData, 0, 0)
 },
 
   async generateImages(studyContent: StudyContent): Promise<void> {

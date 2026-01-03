@@ -547,16 +547,6 @@ const HighlightedText: React.FC<{
                 <div className="qa-upload__sub">We’ll analyze and generate a study pack</div>
               </label>
 
-              {pdfFile && (
-                <div className="qa-upload__fileInfo">
-                  <HiDocumentText className="qa-ico qa-ico--btn" />
-                  <span className="qa-truncate" title={pdfFile.name}>
-                    {pdfFile.name}
-                  </span>
-                  <span className="qa-upload__fileMeta">({(pdfFile.size / 1024 / 1024).toFixed(1)} MB)</span>
-                </div>
-              )}
-
               {processing && (
                 <div className="qa-upload__progress">
                   <div className="qa-upload__progressTop">
@@ -570,6 +560,16 @@ const HighlightedText: React.FC<{
                 </div>
               )}
             </div>
+
+            {pdfFile && (
+              <div className="qa-upload__fileInfo" style={{ marginTop: 16 }}>
+                <HiDocumentText className="qa-ico qa-ico--btn" />
+                <span className="qa-truncate" title={pdfFile.name}>
+                  {pdfFile.name}
+                </span>
+                <span className="qa-upload__fileMeta">({(pdfFile.size / 1024 / 1024).toFixed(1)} MB)</span>
+              </div>
+            )}
 
             <button
               onClick={handleAnalyze}
