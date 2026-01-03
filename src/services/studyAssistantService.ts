@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import * as pdfjsLib from 'pdfjs-dist'
-import Tesseract from 'tesseract.js'
+import { tesseractService } from './tesseractService'
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
 
@@ -87,101 +87,25 @@ export const studyAssistantService = {
   const numPages = pdf.numPages
   
   progressCallback?.(20, `Processing ${numPages} pages...`)
-  
-  let fullText = ''
-  const ocrThreshold = 50
 
-  for (let i = 1; i <= numPages; i++) {
-    const page = await pdf.getPage(i)
-    
-    const textContent = await page.getTextContent()
-    
-    // Improved text extraction with proper spacing
-    let pageText = ''
-    let lastY = -1
-    let lastX = -1
-    
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    textContent.items.forEach((item: any) => {
-      if (!item.str) return
-      
-      const currentY = item.transform[5]
-      const currentX = item.transform[4]
-      
-      // Add line break if Y position changed significantly (new line)
-      if (lastY !== -1 && Math.abs(currentY - lastY) > 5) {
-        pageText += '\n'
-      }
-      // Add space if on same line but X gap is significant
-      else if (lastX !== -1 && lastY !== -1 && Math.abs(currentY - lastY) <= 5) {
-        const xGap = currentX - lastX
-        // If there's a gap, add space
-        if (xGap > 2) {
-          pageText += ' '
-        }
-      }
-      
-      pageText += item.str
-      lastY = currentY
-      lastX = currentX + (item.width || 0)
-    })
-    
-    pageText = pageText.trim()
-    
-    console.log(`Page ${i} text length:`, pageText.length)
-    console.log(`Page ${i} sample:`, pageText.substring(0, 200))
-    
-    if (pageText.length < ocrThreshold) {
-      progressCallback?.(
-        20 + ((i - 1) / numPages) * 60,
-        `Page ${i}: Scanning with OCR (image-based content)...`
-      )
-      
-      try {
-        const scale = 2.5
-        const viewport = page.getViewport({ scale })
-        const canvas = document.createElement('canvas')
-        canvas.width = viewport.width
-        canvas.height = viewport.height
-        const context = canvas.getContext('2d')
-        
-        if (!context) {
-          fullText += pageText + '\n\n'
-          continue
-        }
-        
-        await page.render({ canvasContext: context, viewport }).promise
-        
-        const imageBlob = await new Promise<Blob>((resolve, reject) => {
-          canvas.toBlob((blob) => {
-            if (blob) {
-              resolve(blob)
-            } else {
-              reject(new Error('Failed to create blob from canvas'))
-            }
-          }, 'image/png', 0.95)
-        })
-        
-        const ocrText = await this.performOCR(imageBlob)
-        
-        if (ocrText.trim().length > 20) {
-          fullText += ocrText + '\n\n'
-        } else if (pageText.length > 0) {
-          fullText += pageText + '\n\n'
-        }
-      } catch (ocrError) {
-        console.error(`OCR failed for page ${i}:`, ocrError)
-        fullText += pageText + '\n\n'
-      }
-    } else {
-      fullText += pageText + '\n\n'
-    }
-    
-    progressCallback?.(
-      20 + (i / numPages) * 60,
-      `Processed page ${i}/${numPages}`
+  let pagesProcessed = 0
+
+  const pagePromises = Array.from({ length: numPages }, (_, i) =>
+    pdf.getPage(i + 1).then(page =>
+      this._processPage(page, i + 1, (msg: string) => {
+        progressCallback?.(20 + (pagesProcessed / numPages) * 60, msg)
+      }).finally(() => {
+        pagesProcessed++
+        progressCallback?.(
+          20 + (pagesProcessed / numPages) * 60,
+          `Processed page ${pagesProcessed}/${numPages}`
+        )
+      })
     )
-  }
+  )
+
+  const pageTexts = await Promise.all(pagePromises)
+  let fullText = pageTexts.join('\n\n')
 
   progressCallback?.(80, 'Finalizing text extraction...')
   
@@ -207,20 +131,88 @@ export const studyAssistantService = {
   
   return fullText
 },
-  async performOCR(imageBlob: Blob): Promise<string> {
-    try {
-      const result = await Tesseract.recognize(
-        imageBlob,
-        'eng',
-        {}
-      )
-      
-      return result.data.text
-    } catch (error) {
-      console.error('OCR error:', error)
-      return ''
+
+async _processPage(
+  page: pdfjsLib.PDFPageProxy,
+  pageNum: number,
+  progressCallback?: (message: string) => void
+): Promise<string> {
+  const ocrThreshold = 100
+  const textContent = await page.getTextContent()
+  
+  // Improved text extraction with proper spacing
+  let pageText = ''
+  let lastY = -1
+  let lastX = -1
+  
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  textContent.items.forEach((item: any) => {
+    if (!item.str) return
+    
+    const currentY = item.transform[5]
+    const currentX = item.transform[4]
+    
+    // Add line break if Y position changed significantly (new line)
+    if (lastY !== -1 && Math.abs(currentY - lastY) > 5) {
+      pageText += '\n'
     }
-  },
+    // Add space if on same line but X gap is significant
+    else if (lastX !== -1 && lastY !== -1 && Math.abs(currentY - lastY) <= 5) {
+      const xGap = currentX - lastX
+      // If there's a gap, add space
+      if (xGap > 2) {
+        pageText += ' '
+      }
+    }
+    
+    pageText += item.str
+    lastY = currentY
+    lastX = currentX + (item.width || 0)
+  })
+  
+  pageText = pageText.trim()
+  
+  if (pageText.length < ocrThreshold) {
+    progressCallback?.(
+      `Page ${pageNum}: Scanning with OCR (image-based content)...`
+    )
+    
+    try {
+      const scale = 2.0 // Reduced scale for better performance
+      const viewport = page.getViewport({ scale })
+      const canvas = document.createElement('canvas')
+      canvas.width = viewport.width
+      canvas.height = viewport.height
+      const context = canvas.getContext('2d')
+      
+      if (!context) {
+        return pageText
+      }
+      
+      await page.render({ canvasContext: context, viewport }).promise
+      
+      const imageBlob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve(blob)
+          } else {
+            reject(new Error('Failed to create blob from canvas'))
+          }
+        }, 'image/png', 0.95)
+      })
+      
+      const ocrText = await tesseractService.performOCR(imageBlob)
+      
+      if (ocrText.trim().length > 20) {
+        return ocrText
+      }
+    } catch (ocrError) {
+      console.error(`OCR failed for page ${pageNum}:`, ocrError)
+    }
+  }
+  
+  return pageText
+},
 
   async generateImages(studyContent: StudyContent): Promise<void> {
     // Generate simple educational diagrams using an API or placeholder
