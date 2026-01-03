@@ -99,6 +99,7 @@ export const studyAssistantService = {
     let lastY = -1
     let lastX = -1
     
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     textContent.items.forEach((item: any) => {
       if (!item.str) return
       
@@ -504,6 +505,7 @@ IMPORTANT: Return ONLY the JSON object. No text before or after. No markdown. No
         // Fix trailing commas
         .replace(/,(\s*[}\]])/g, '$1')
         // Remove any control characters
+        // eslint-disable-next-line no-control-regex
         .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
       
       try {
