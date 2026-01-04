@@ -62,6 +62,7 @@ const StudyAssistant: React.FC = () => {
   const speechSynthesisRef = useRef<SpeechSynthesisUtterance | null>(null)
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([])
   const [selectedVoice, setSelectedVoice] = useState<number>(0)
+  const [rate, setRate] = useState(1.0);
 
   // Highlighting state
   const [highlightedWord, setHighlightedWord] = useState<number>(-1)
@@ -252,7 +253,7 @@ Try:
     utterance.voice = voices[selectedVoice]
   }
   
-  utterance.rate = 0.85
+  utterance.rate = rate
   utterance.pitch = 1
   utterance.volume = 1
   utterance.lang = 'en-US'
@@ -268,15 +269,6 @@ Try:
   }
 
   // ... rest of the function
-
-  utterance.onend = () => {
-    setIsPlaying(false)
-    setCurrentSection('')
-    setAudioProgress(0)
-    setHighlightedWord(-1)
-    setHighlightedSection('')
-    console.log('⏹️ Speech ended')
-  }
 
   utterance.onerror = (event) => {
     console.error('❌ Speech synthesis error:', event)
@@ -353,6 +345,24 @@ Try:
   
   try {
     window.speechSynthesis.speak(utterance)
+    const interval = setInterval(() => {
+        if (window.speechSynthesis.speaking) {
+            window.speechSynthesis.pause()
+            window.speechSynthesis.resume()
+        } else {
+            clearInterval(interval)
+        }
+    }, 10000)
+
+    utterance.onend = () => {
+        clearInterval(interval)
+        setIsPlaying(false)
+        setCurrentSection('')
+        setAudioProgress(0)
+        setHighlightedWord(-1)
+        setHighlightedSection('')
+        console.log('⏹️ Speech ended')
+    }
   } catch (err) {
     console.error('Error starting speech:', err)
     setError('Could not start speech synthesis. Please try again.')
@@ -361,7 +371,7 @@ Try:
     setHighlightedWord(-1)
     setHighlightedSection('')
   }
-}, [voices, selectedVoice, isPlaying, currentSection])
+}, [voices, selectedVoice, isPlaying, currentSection, rate])
 
 const HighlightedText: React.FC<{
   text: string
@@ -475,8 +485,7 @@ const HighlightedText: React.FC<{
   const speakAll = () => {
     if (!studyContent) return
 
-    const explanationSample = studyContent.detailedExplanation.substring(0, 3000)
-    speakText(explanationSample, 'all')
+    speakText(studyContent.detailedExplanation, 'all')
   }
 
   const handleQuizAnswer = (answerIndex: number) => {
@@ -809,6 +818,18 @@ const HighlightedText: React.FC<{
                   </div>
                 </div>
               )}
+              <div className="qa-field" style={{ marginTop: 14 }}>
+                <label className="qa-label">Reading Speed ({rate}x)</label>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="2"
+                  step="0.1"
+                  value={rate}
+                  onChange={(e) => setRate(parseFloat(e.target.value))}
+                  className="w-full"
+                />
+              </div>
             </section>
 
             {/* Original content */}
@@ -820,7 +841,7 @@ const HighlightedText: React.FC<{
                 </div>
                 <button
                   className="qa-iconBtn"
-                  onClick={() => speakText(studyContent.originalContent.substring(0, 3000), 'original')}
+                  onClick={() => speakText(studyContent.originalContent, 'original')}
                   title="Listen"
                   type="button"
                 >
@@ -830,7 +851,7 @@ const HighlightedText: React.FC<{
 
               <div className="qa-readingBox">
                 <HighlightedText
-                  text={studyContent.originalContent.substring(0, 3000)}
+                  text={studyContent.originalContent}
                   section="original"
                   isActive={highlightedSection === 'original'}
                 />
