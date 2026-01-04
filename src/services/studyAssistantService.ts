@@ -1,6 +1,8 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import * as pdfjsLib from 'pdfjs-dist'
 import { tesseractService } from './tesseractService'
+import mammoth from 'mammoth'
+import JSZip from 'jszip'
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
 
@@ -36,30 +38,44 @@ interface StudyContent {
 }
 
 export const studyAssistantService = {
-  async analyzePDF(
+  async analyzeDocument(
     file: File,
     progressCallback?: ProgressCallback
   ): Promise<StudyContent> {
     try {
-      progressCallback?.(5, 'Loading PDF...')
+      progressCallback?.(5, `Loading ${file.type}...`)
       
-      // Extract text from PDF with OCR support
-      const { text, warning } = await this.extractTextFromPDFWithOCR(file, (prog, msg) => {
-        progressCallback?.(5 + prog * 0.35, msg)
-      })
+      let text: string;
+      let warning: string | null = null;
+
+      if (file.type === 'application/pdf') {
+        const result = await this._extractTextFromPDF(file, (prog, msg) => {
+          progressCallback?.(5 + prog * 0.35, msg)
+        });
+        text = result.text;
+        warning = result.warning;
+      } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || file.type === 'application/msword') {
+        text = await this._extractTextFromWord(file);
+        progressCallback?.(40, 'Text extracted from Word document.');
+      } else if (file.type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
+        text = await this._extractTextFromPowerPoint(file)
+        progressCallback?.(40, 'Text extracted from PowerPoint document.');
+      } else {
+        throw new Error(`Unsupported file type: ${file.type}`);
+      }
 
       console.log('Extracted text length:', text.length)
       console.log('First 500 chars:', text.substring(0, 500))
 
       if (!text || text.trim().length < 100) {
-        throw new Error('Could not extract sufficient text from PDF. The PDF might be empty, image-only, or corrupted.')
+        throw new Error('Could not extract sufficient text from the document. It might be empty, image-only, or corrupted.')
       }
 
       progressCallback?.(40, 'Analyzing content with AI...')
 
       // Generate study content using Gemini AI
-      const studyContent = await this.generateStudyContent(text, (prog) => {
-        progressCallback?.(40 + prog * 0.5, 'Generating study materials...')
+      const studyContent = await this.generateStudyContent(text, (prog, msg) => {
+        progressCallback?.(40 + prog * 0.5, msg || 'Generating study materials...')
       })
 
       if (warning) {
@@ -74,13 +90,44 @@ export const studyAssistantService = {
       
       return studyContent
     } catch (error) {
-      console.error('PDF analysis error:', error)
+      console.error('Document analysis error:', error)
       const err = error as Error
-      throw new Error(err.message || 'Failed to analyze PDF. Please try again.')
+      throw new Error(err.message || 'Failed to analyze document. Please try again.')
     }
   },
 
-  async extractTextFromPDFWithOCR(
+  async _extractTextFromWord(file: File): Promise<string> {
+    const arrayBuffer = await file.arrayBuffer();
+    const result = await mammoth.extractRawText({ arrayBuffer });
+    return result.value;
+  },
+
+  async _extractTextFromPowerPoint(file: File): Promise<string> {
+    const arrayBuffer = await file.arrayBuffer();
+    const zip = await JSZip.loadAsync(arrayBuffer);
+    const slidePromises: Promise<string>[] = [];
+
+    zip.folder('ppt/slides')?.forEach((relativePath, file) => {
+      if (relativePath.endsWith('.xml')) {
+        slidePromises.push(file.async('string'));
+      }
+    });
+
+    const slideXmls = await Promise.all(slidePromises);
+    let fullText = '';
+
+    const parser = new DOMParser();
+    for (const xml of slideXmls) {
+      const doc = parser.parseFromString(xml, 'application/xml');
+      const textNodes = doc.getElementsByTagName('a:t');
+      for (let i = 0; i < textNodes.length; i++) {
+        fullText += textNodes[i].textContent + '\n';
+      }
+    }
+    return fullText;
+  },
+
+  async _extractTextFromPDF(
   file: File,
   progressCallback?: (progress: number, message: string) => void
 ): Promise<{ text: string, warning: string | null }> {
@@ -390,19 +437,20 @@ async createDiagramPlaceholder(concept: string, description: string): Promise<st
 
   async generateStudyContent(
   text: string,
-  progressCallback?: (progress: number) => void
+  progressCallback?: (progress: number, message: string) => void
 ): Promise<StudyContent> {
   if (!import.meta.env.VITE_GEMINI_API_KEY) {
     throw new Error('Gemini API key not configured')
   }
 
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
 
-  const limitedText = text.substring(0, 30000)
-  
-  console.log('Sending to AI, text length:', limitedText.length)
+    const limitedText = text.substring(0, 30000)
+    
+    console.log('Sending to AI, text length:', limitedText.length)
 
-  const prompt = `You are an expert educational AI assistant. Analyze the following document and create a comprehensive study guide.
+    const prompt = `You are an expert educational AI assistant. Analyze the following document and create a comprehensive study guide.
 
 CRITICAL: Base EVERYTHING strictly on the content provided. Do NOT add external information or general knowledge.
 
@@ -483,80 +531,120 @@ RESPONSE FORMAT: Return ONLY valid JSON with this exact structure (no markdown, 
 
 IMPORTANT: Return ONLY the JSON object. No text before or after. No markdown. No explanations.`
 
-  progressCallback?.(30)
+    progressCallback?.(30, 'Generating prompt...')
 
-  try {
-    const result = await model.generateContent(prompt)
-    const response = await result.response
-    let responseText = response.text()
+    const MAX_RETRIES = 3;
+    let attempt = 0;
+    let studyContent: StudyContent | null = null;
 
-    console.log('AI Response received, length:', responseText.length)
-    console.log('First 500 chars:', responseText.substring(0, 500))
-    console.log('Last 500 chars:', responseText.substring(Math.max(0, responseText.length - 500)))
+    while (attempt < MAX_RETRIES) {
+      try {
+        const result = await model.generateContent(prompt)
+        const response = await result.response
+        let responseText = response.text()
 
-    progressCallback?.(70)
+        console.log('AI Response received, length:', responseText.length)
+        console.log('First 500 chars:', responseText.substring(0, 500))
+        console.log('Last 500 chars:', responseText.substring(Math.max(0, responseText.length - 500)))
 
-    // More aggressive cleaning to extract ONLY the JSON
-    responseText = responseText.trim()
-    
-    // Remove markdown code blocks
-    responseText = responseText.replace(/```json\s*/gi, '').replace(/```\s*/g, '')
-    
-    // Remove any text before the first {
-    const firstBrace = responseText.indexOf('{')
-    if (firstBrace === -1) {
-      throw new Error('No JSON object found in response')
-    }
-    responseText = responseText.substring(firstBrace)
-    
-    // Find the last closing brace by counting braces
-    let braceCount = 0
-    let lastValidIndex = -1
-    
-    for (let i = 0; i < responseText.length; i++) {
-      if (responseText[i] === '{') {
-        braceCount++
-      } else if (responseText[i] === '}') {
-        braceCount--
-        if (braceCount === 0) {
-          lastValidIndex = i
-          break
+        progressCallback?.(70, 'Parsing AI response...')
+
+        // More aggressive cleaning to extract ONLY the JSON
+        responseText = responseText.trim()
+        
+        // Remove markdown code blocks
+        responseText = responseText.replace(/```json\s*/gi, '').replace(/```\s*/g, '')
+        
+        // Remove any text before the first {
+        const firstBrace = responseText.indexOf('{')
+        if (firstBrace === -1) {
+          throw new Error('No JSON object found in response')
+        }
+        responseText = responseText.substring(firstBrace)
+        
+        // Find the last closing brace by counting braces
+        let braceCount = 0
+        let lastValidIndex = -1
+        
+        for (let i = 0; i < responseText.length; i++) {
+          if (responseText[i] === '{') {
+            braceCount++
+          } else if (responseText[i] === '}') {
+            braceCount--
+            if (braceCount === 0) {
+              lastValidIndex = i
+              break
+            }
+          }
+        }
+        
+        if (lastValidIndex !== -1) {
+          responseText = responseText.substring(0, lastValidIndex + 1)
+        }
+
+        console.log('Cleaned response length:', responseText.length)
+        console.log('Cleaned first 200 chars:', responseText.substring(0, 200))
+        console.log('Cleaned last 200 chars:', responseText.substring(Math.max(0, responseText.length - 200)))
+
+        try {
+          studyContent = JSON.parse(responseText)
+        } catch (parseError) {
+          console.error('JSON Parse Error:', parseError)
+          console.error('Failed to parse response. Attempting alternative parsing...')
+          
+          // Try to fix common JSON issues
+          const fixedResponse = responseText
+            // Fix unescaped quotes in strings
+            .replace(/([^\\])"/g, '$1\\"')
+            // Fix trailing commas
+            .replace(/,(\s*[}\]])/g, '$1')
+            // Remove any control characters
+            // eslint-disable-next-line no-control-regex
+            .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
+          
+          try {
+            studyContent = JSON.parse(fixedResponse)
+          } catch (secondError) {
+            console.error('Second parse attempt failed:', secondError)
+            throw new Error('Failed to parse AI response as JSON. The response may be corrupted.')
+          }
+        }
+        break; // If successful, break out of the retry loop
+      } catch (error: any) {
+        if (error.response && error.response.status === 429) {
+          attempt++;
+          const retryAfterHeader = error.response.headers.get('Retry-After');
+          let delay = 2000 * Math.pow(2, attempt - 1); // Exponential backoff starting at 2s
+
+          if (retryAfterHeader) {
+            const retryAfterSeconds = parseInt(retryAfterHeader);
+            if (!isNaN(retryAfterSeconds)) {
+              delay = retryAfterSeconds * 1000;
+            }
+          } else if (error.message.includes('Please retry in')) {
+              // Attempt to parse delay from the error message string
+              const match = error.message.match(/Please retry in (\d+(\.\d+)?)s/);
+              if (match && parseFloat(match[1])) {
+                  delay = parseFloat(match[1]) * 1000;
+              }
+          }
+          
+          if (attempt < MAX_RETRIES) {
+            console.warn(`Rate limit hit. Retrying in ${delay / 1000} seconds... (Attempt ${attempt}/${MAX_RETRIES})`);
+            progressCallback?.(70 + (attempt / MAX_RETRIES) * 10, `Rate limit hit. Retrying in ${Math.round(delay / 1000)}s...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          } else {
+            console.error('Max retries reached for API call.');
+            throw new Error('Failed to generate study content due to too many requests. Please try again later.');
+          }
+        } else {
+          throw error; // Re-throw other errors immediately
         }
       }
     }
-    
-    if (lastValidIndex !== -1) {
-      responseText = responseText.substring(0, lastValidIndex + 1)
-    }
 
-    console.log('Cleaned response length:', responseText.length)
-    console.log('Cleaned first 200 chars:', responseText.substring(0, 200))
-    console.log('Cleaned last 200 chars:', responseText.substring(Math.max(0, responseText.length - 200)))
-
-    let studyContent: StudyContent
-
-    try {
-      studyContent = JSON.parse(responseText)
-    } catch (parseError) {
-      console.error('JSON Parse Error:', parseError)
-      console.error('Failed to parse response. Attempting alternative parsing...')
-      
-      // Try to fix common JSON issues
-      const fixedResponse = responseText
-        // Fix unescaped quotes in strings
-        .replace(/([^\\])"/g, '$1\\"')
-        // Fix trailing commas
-        .replace(/,(\s*[}\]])/g, '$1')
-        // Remove any control characters
-        // eslint-disable-next-line no-control-regex
-        .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
-      
-      try {
-        studyContent = JSON.parse(fixedResponse)
-      } catch (secondError) {
-        console.error('Second parse attempt failed:', secondError)
-        throw new Error('Failed to parse AI response as JSON. The response may be corrupted.')
-      }
+    if (!studyContent) {
+      throw new Error("Failed to generate study content after multiple retries.");
     }
 
     // Validate the response structure
@@ -598,7 +686,7 @@ IMPORTANT: Return ONLY the JSON object. No text before or after. No markdown. No
     console.log('Exam questions:', studyContent.examQuestions.length)
     console.log('Visual aids:', studyContent.visualAids.length)
 
-    progressCallback?.(100)
+    progressCallback?.(100, 'Content generated.')
 
     return studyContent
   } catch (error) {

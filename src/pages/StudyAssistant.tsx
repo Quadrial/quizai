@@ -119,7 +119,7 @@ const StudyAssistant: React.FC = () => {
     }
   }, [])
 
-  const handlePdfSelect = async (file: File | null) => {
+  const handleFileSelect = async (file: File | null) => {
     if (!file) {
       setPdfFile(null)
       setProgress(0)
@@ -127,13 +127,21 @@ const StudyAssistant: React.FC = () => {
       return
     }
 
-    if (!file.type.includes('pdf')) {
-      setError('Please select a valid PDF file')
+    const acceptedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+    ]
+
+    if (!acceptedTypes.includes(file.type)) {
+      setError('Please select a valid PDF, Word, or PowerPoint file')
       return
     }
 
     if (file.size > 50 * 1024 * 1024) {
-      setError('PDF file size must be less than 50MB')
+      setError('File size must be less than 50MB')
       return
     }
 
@@ -153,7 +161,7 @@ const StudyAssistant: React.FC = () => {
     setProgress(0)
 
     try {
-      const content = await studyAssistantService.analyzePDF(
+      const content = await studyAssistantService.analyzeDocument(
         pdfFile,
         (prog, msg) => {
           setProgress(prog)
@@ -547,6 +555,22 @@ const HighlightedText: React.FC<{
           </div>
         )}
 
+        {warning && (
+          <div className="qa-stack" style={{ marginBottom: 14 }}>
+            <div className="qa-callout qa-callout--warn">
+              <div className="qa-callout__row">
+                <div className="qa-alert__icon" style={{ background: 'var(--qa-warning)', boxShadow: '0 14px 34px rgb(var(--qa-warning-rgb) / 0.22)'}}>
+                  <HiExclamationTriangle className="qa-ico qa-ico--lg" />
+                </div>
+                <div className="qa-callout__body">
+                  <div className="qa-callout__title" style={{ color: 'rgb(var(--qa-warning-rgb) / 0.85)' }}>Warning</div>
+                  <p className="qa-callout__text" style={{ color: 'rgb(var(--qa-warning-rgb) / 0.75)' }}>{warning}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {error && (
           <div className="qa-stack" style={{ marginBottom: 14 }}>
             <ErrorMessage message={error} onRetry={() => setError('')} onDismiss={() => setError('')} />
@@ -556,21 +580,21 @@ const HighlightedText: React.FC<{
         {!studyContent ? (
           <section className="qa-card qa-card__pad">
             <div className="qa-sectionHead">
-              <h2 className="qa-sectionTitle">Upload PDF</h2>
-              <p className="qa-sectionDesc">PDF up to 50MB. Scanned PDFs may not extract text well.</p>
+              <h2 className="qa-sectionTitle">Upload Document</h2>
+              <p className="qa-sectionDesc">PDF, Word, or PowerPoint up to 50MB. Scanned PDFs may not extract text well.</p>
             </div>
 
             <div className="qa-upload">
               <input
                 type="file"
                 id="saPdf"
-                accept=".pdf"
-                onChange={(e) => handlePdfSelect(e.target.files?.[0] || null)}
+                accept=".pdf,.doc,.docx,.ppt,.pptx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                onChange={(e) => handleFileSelect(e.target.files?.[0] || null)}
                 className="qa-upload__input"
               />
               <label htmlFor="saPdf" className="qa-upload__label">
                 <HiCloudArrowUp className="qa-ico qa-ico--lg" />
-                <div className="qa-upload__title">Click to upload PDF</div>
+                <div className="qa-upload__title">Click to upload Document</div>
                 <div className="qa-upload__sub">We’ll analyze and generate a study pack</div>
               </label>
 
