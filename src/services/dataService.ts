@@ -35,6 +35,11 @@ export class DataService {
     return await localStorageService.getMaterials(userId)
   }
 
+  async getMaterial(materialId: string, userId?: string): Promise<StudyMaterial | null> {
+    if (!userId) return null
+    return await localStorageService.getMaterial(materialId, userId)
+  }
+
   async deleteMaterial(materialId: string, userId?: string): Promise<void> {
     if (!userId) throw new Error('User ID is required')
     await localStorageService.deleteMaterial(materialId, userId)

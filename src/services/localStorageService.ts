@@ -123,6 +123,11 @@ export class LocalStorageService {
       .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime())
   }
 
+  async getMaterial(materialId: string, userId: string): Promise<StudyMaterial | null> {
+    const materials = this.getStoredMaterials()
+    return materials.find(m => m.id === materialId && m.userId === userId) || null
+  }
+
   async deleteMaterial(materialId: string, userId: string): Promise<void> {
     const materials = this.getStoredMaterials()
     const filtered = materials.filter(m => !(m.id === materialId && m.userId === userId))

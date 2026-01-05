@@ -10,6 +10,7 @@ import Settings from './pages/Settings'
 import Login from './pages/Login'
 
 import StudyAssistant from './pages/StudyAssistant'
+import MaterialsHistory from './pages/MaterialsHistory'
 import './App.css'
 
 function App() {
@@ -26,7 +27,8 @@ function App() {
             <Route path="/settings" element={<Settings />} />
             <Route path="/login" element={<Login />} />
             
-            <Route path="/study-assistant" element={<StudyAssistant />} />
+            <Route path="/study-assistant/:materialId?" element={<StudyAssistant />} />
+            <Route path="/materials" element={<MaterialsHistory />} />
           </Routes>
         </Layout>
       </Router>

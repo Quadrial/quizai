@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { studyAssistantService } from '../services/studyAssistantService'
+import { dataService } from '../services/dataService'
 import ErrorMessage from '../components/ErrorMessage'
+import type { StudyMaterial } from '../types'
 import {
   HiCloudArrowUp,
   HiDocumentText,
@@ -18,6 +20,7 @@ import {
   HiClipboardDocumentList,
   HiExclamationTriangle
 } from 'react-icons/hi2'
+import { useParams } from 'react-router-dom'
 
 interface KeyPoint {
   title: string
@@ -75,7 +78,22 @@ const StudyAssistant: React.FC = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null)
   const [showExplanation, setShowExplanation] = useState(false)
+  const { materialId } = useParams<{ materialId: string }>()
   const [quizScore, setQuizScore] = useState({ correct: 0, total: 0 })
+
+  useEffect(() => {
+    if (materialId && user) {
+      const loadMaterial = async () => {
+        setLoading(true)
+        const material = await dataService.getMaterial(materialId, user.id)
+        if (material) {
+          setStudyContent(JSON.parse(material.content))
+        }
+        setLoading(false)
+      }
+      loadMaterial()
+    }
+  }, [materialId, user])
 
   // Load available voices
   useEffect(() => {
@@ -177,9 +195,21 @@ const StudyAssistant: React.FC = () => {
         content.detailedExplanation = explanationParts.join('\n\n')
       }
 
+setProgressMessage('Analysis complete!')
+      
+      // Save the material
+      if (user && pdfFile) {
+        const materialToSave: StudyMaterial = {
+          id: `${new Date().toISOString()}-${pdfFile.name}`,
+          type: 'pdf',
+          name: pdfFile.name,
+          uploadedAt: new Date().toISOString(),
+          content: JSON.stringify(content),
+        }
+        await dataService.saveMaterial(materialToSave, user.id)
+      }
+
       setStudyContent(content)
-      setProgress(100)
-      setProgressMessage('Analysis complete!')
     } catch (err) {
       const error = err as Error
       console.error('Analysis error:', error)

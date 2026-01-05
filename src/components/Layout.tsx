@@ -209,7 +209,8 @@ import {
   HiSparkles,
   HiChatBubbleLeftRight,
   HiCog6Tooth,
-  HiHeart
+  HiHeart,
+  HiArchiveBox
 } from 'react-icons/hi2'
 
 interface LayoutProps {
@@ -232,6 +233,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'Dashboard', href: '/dashboard', icon: HiChartBar },
     { name: 'Create Quiz', href: '/create-quiz', icon: HiPlus },
     { name: 'Study Assistant', href: '/study-assistant', icon: HiChatBubbleLeftRight },
+    { name: 'Materials', href: '/materials', icon: HiArchiveBox },
     { name: 'Settings', href: '/settings', icon: HiCog6Tooth }
   ]
 
