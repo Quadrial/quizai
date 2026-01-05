@@ -438,7 +438,7 @@ const HighlightedText: React.FC<{
     
     // Pass true to indicate we're starting from a clicked word
     speakText(textFromWord, section, true)
-  }, [formattedText, section])
+  }, [formattedText, section, speakText])
 
   let globalWordIndex = 0
 
