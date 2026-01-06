@@ -1,9 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { studyAssistantService } from '../services/studyAssistantService'
-import { dataService } from '../services/dataService'
 import ErrorMessage from '../components/ErrorMessage'
-import type { StudyMaterial } from '../types'
 import {
   HiCloudArrowUp,
   HiDocumentText,
@@ -17,10 +15,8 @@ import {
   HiArrowPath,
   HiCheckCircle,
   HiBeaker,
-  HiClipboardDocumentList,
   HiExclamationTriangle
 } from 'react-icons/hi2'
-import { useParams } from 'react-router-dom'
 
 interface KeyPoint {
   title: string
@@ -73,27 +69,7 @@ const StudyAssistant: React.FC = () => {
   const textRefs = useRef<Map<string, HTMLDivElement>>(new Map())
   const wordsArrayRef = useRef<Map<string, string[]>>(new Map())
 
-  // Quiz state
-  const [showQuiz, setShowQuiz] = useState(false)
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null)
-  const [showExplanation, setShowExplanation] = useState(false)
-  const { materialId } = useParams<{ materialId: string }>()
-  const [quizScore, setQuizScore] = useState({ correct: 0, total: 0 })
 
-  useEffect(() => {
-    if (materialId && user) {
-      const loadMaterial = async () => {
-        setLoading(true)
-        const material = await dataService.getMaterial(materialId, user.id)
-        if (material) {
-          setStudyContent(JSON.parse(material.content))
-        }
-        setLoading(false)
-      }
-      loadMaterial()
-    }
-  }, [materialId, user])
 
   // Load available voices
   useEffect(() => {
@@ -195,20 +171,7 @@ const StudyAssistant: React.FC = () => {
         content.detailedExplanation = explanationParts.join('\n\n')
       }
 
-setProgressMessage('Analysis complete!')
-      
-      // Save the material
-      if (user && pdfFile) {
-        const materialToSave: StudyMaterial = {
-          id: `${new Date().toISOString()}-${pdfFile.name}`,
-          type: 'pdf',
-          name: pdfFile.name,
-          uploadedAt: new Date().toISOString(),
-          content: JSON.stringify(content),
-        }
-        await dataService.saveMaterial(materialToSave, user.id)
-      }
-
+      setProgressMessage('Analysis complete!')
       setStudyContent(content)
     } catch (err) {
       const error = err as Error
@@ -518,37 +481,6 @@ const HighlightedText: React.FC<{
     speakText(studyContent.detailedExplanation, 'all')
   }
 
-  const handleQuizAnswer = (answerIndex: number) => {
-    if (!studyContent) return
-    
-    setSelectedAnswer(answerIndex)
-    setShowExplanation(true)
-    
-    const currentQuestion = studyContent.examQuestions[currentQuestionIndex]
-    if (answerIndex === currentQuestion.correctAnswer) {
-      setQuizScore(prev => ({ ...prev, correct: prev.correct + 1, total: prev.total + 1 }))
-    } else {
-      setQuizScore(prev => ({ ...prev, total: prev.total + 1 }))
-    }
-  }
-
-  const nextQuestion = () => {
-    if (!studyContent) return
-    
-    if (currentQuestionIndex < studyContent.examQuestions.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1)
-      setSelectedAnswer(null)
-      setShowExplanation(false)
-    } else {
-      alert(`Quiz Complete! Your score: ${quizScore.correct + (selectedAnswer === studyContent.examQuestions[currentQuestionIndex].correctAnswer ? 1 : 0)}/${quizScore.total + 1}`)
-      setShowQuiz(false)
-      setCurrentQuestionIndex(0)
-      setQuizScore({ correct: 0, total: 0 })
-      setSelectedAnswer(null)
-      setShowExplanation(false)
-    }
-  }
-
   return (
   <div className="qa-studyWrap qa-fadeIn">
     {!user ? (
@@ -680,105 +612,6 @@ const HighlightedText: React.FC<{
               )}
             </button>
           </section>
-        ) : showQuiz ? (
-          <section className="qa-card qa-card__pad qa-practiceCard">
-            <div className="qa-practiceTop">
-              <div>
-                <h2 className="qa-sectionTitle" style={{ margin: 0 }}>Practice Quiz</h2>
-                <div className="qa-help">Score: {quizScore.correct}/{quizScore.total}</div>
-              </div>
-
-              <button
-                className="qa-btn qa-btn--surface"
-                onClick={() => {
-                  setShowQuiz(false)
-                  setCurrentQuestionIndex(0)
-                  setSelectedAnswer(null)
-                  setShowExplanation(false)
-                  setQuizScore({ correct: 0, total: 0 })
-                }}
-              >
-                Exit
-              </button>
-            </div>
-
-            {studyContent.examQuestions.length > 0 && (
-              <>
-                <div className="qa-progress qa-progress--sm" style={{ marginTop: 12 }}>
-                  <div
-                    className="qa-progress__fill"
-                    style={{ width: `${((currentQuestionIndex + 1) / studyContent.examQuestions.length) * 100}%` }}
-                  />
-                </div>
-
-                {(() => {
-                  const question = studyContent.examQuestions[currentQuestionIndex]
-                  const ok = selectedAnswer === question.correctAnswer
-
-                  return (
-                    <div style={{ marginTop: 14 }}>
-                      <div className="qa-callout qa-callout--info">
-                        <div className="qa-callout__body">
-                          <div className="qa-callout__title">
-                            {question.type === 'multiple-choice' ? 'Multiple choice' : 'True/False'} • {question.topic}
-                          </div>
-                          <div className="qa-callout__text">{question.question}</div>
-                        </div>
-                      </div>
-
-                      <div className="qa-answerList" style={{ marginTop: 12 }}>
-                        {question.options.map((opt, idx) => {
-                          const btnClass = [
-                            'qa-answer',
-                            showExplanation
-                              ? idx === question.correctAnswer
-                                ? 'qa-answer--correct'
-                                : idx === selectedAnswer
-                                  ? 'qa-answer--wrong'
-                                  : 'qa-answer--muted'
-                              : selectedAnswer === idx
-                                ? 'qa-answer--selected'
-                                : ''
-                          ].join(' ')
-
-                          return (
-                            <button
-                              key={idx}
-                              onClick={() => !showExplanation && handleQuizAnswer(idx)}
-                              disabled={showExplanation}
-                              className={btnClass}
-                              type="button"
-                            >
-                              <div className="qa-answer__letter" aria-hidden="true">{String.fromCharCode(65 + idx)}</div>
-                              <div className="qa-answer__text">{opt}</div>
-                              <div className="qa-answer__right" aria-hidden="true">
-                                {showExplanation && idx === question.correctAnswer ? <HiCheckCircle className="qa-ico qa-ico--btn" /> : null}
-                                {showExplanation && idx === selectedAnswer && idx !== question.correctAnswer ? <HiPause className="qa-ico qa-ico--btn" /> : null}
-                              </div>
-                            </button>
-                          )
-                        })}
-                      </div>
-
-                      {showExplanation && (
-                        <div className={`qa-callout ${ok ? 'qa-callout--success' : 'qa-callout--danger'}`} style={{ marginTop: 12 }}>
-                          <div className="qa-callout__body">
-                            <div className="qa-callout__title">{ok ? 'Correct' : 'Incorrect'}</div>
-                            <div className="qa-callout__text">{question.explanation}</div>
-                            <div className="qa-callout__actions">
-                              <button className="qa-btn qa-btn--primary" onClick={nextQuestion}>
-                                {currentQuestionIndex < studyContent.examQuestions.length - 1 ? 'Next' : 'Finish'}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )
-                })()}
-              </>
-            )}
-          </section>
         ) : (
           <div className="qa-studySections">
             {/* Toolbar */}
@@ -787,11 +620,6 @@ const HighlightedText: React.FC<{
                 <button onClick={speakAll} className="qa-btn qa-btn--primary">
                   {isPlaying && currentSection === 'all' ? <HiPause className="qa-ico qa-ico--btn" /> : <HiPlay className="qa-ico qa-ico--btn" />}
                   {isPlaying && currentSection === 'all' ? 'Pause reading' : 'Read explanation'}
-                </button>
-
-                <button onClick={() => setShowQuiz(true)} className="qa-btn qa-btn--surface">
-                  <HiClipboardDocumentList className="qa-ico qa-ico--btn" />
-                  Practice questions
                 </button>
 
                 <button onClick={stopAllAudio} className="qa-btn qa-btn--danger">
@@ -805,11 +633,6 @@ const HighlightedText: React.FC<{
                     setStudyContent(null)
                     setProgress(0)
                     setProgressMessage('')
-                    setShowQuiz(false)
-                    setCurrentQuestionIndex(0)
-                    setSelectedAnswer(null)
-                    setShowExplanation(false)
-                    setQuizScore({ correct: 0, total: 0 })
                     stopAllAudio()
                   }}
                   className="qa-btn qa-btn--surface"
@@ -1018,31 +841,11 @@ const HighlightedText: React.FC<{
                 </div>
               </section>
             )}
-
-            {/* Exam questions */}
-            <section className="qa-card qa-card__pad">
-              <div className="qa-cardHead">
-                <div className="qa-cardHead__title">
-                  <HiClipboardDocumentList className="qa-ico qa-ico--lg" />
-                  <h2 className="qa-cardTitle">Practice questions</h2>
-                </div>
-              </div>
-
-              <p className="qa-help" style={{ marginTop: 6 }}>
-                {studyContent.examQuestions.length} questions generated across the document topics.
-              </p>
-
-              <button onClick={() => setShowQuiz(true)} className="qa-btn qa-btn--primary qa-btn--full qa-btn--xl" style={{ marginTop: 12 }}>
-                <HiClipboardDocumentList className="qa-ico qa-ico--lg" />
-                Start practice quiz
-              </button>
-            </section>
           </div>
         )}
       </>
     )}
   </div>
-)
-}
+)}
 
 export default StudyAssistant

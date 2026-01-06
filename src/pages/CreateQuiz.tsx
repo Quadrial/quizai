@@ -1,7 +1,7 @@
 
 
-import React, { useState, useEffect, useMemo } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import React, { useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { quizService } from '../services/quizService'
 import { dataService } from '../services/dataService'
@@ -21,7 +21,6 @@ import {
 const CreateQuiz: React.FC = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const location = useLocation()
 
   const [step, setStep] = useState<'material' | 'generating'>('material')
   const [materialType, setMaterialType] = useState<'text' | 'pdf' | 'url'>('text')
@@ -37,15 +36,7 @@ const CreateQuiz: React.FC = () => {
   const [pdfProcessing, setPdfProcessing] = useState(false)
   const [pdfProgress, setPdfProgress] = useState(0)
 
-  useEffect(() => {
-    const selectedMaterial = location.state?.selectedMaterial as StudyMaterial
-    if (selectedMaterial) {
-      setMaterialType(selectedMaterial.type)
-      setMaterialName(selectedMaterial.name)
-      if (selectedMaterial.type === 'text') setTextContent(selectedMaterial.content)
-      else if (selectedMaterial.type === 'url') setUrlContent(selectedMaterial.content)
-    }
-  }, [location.state])
+
 
   const canGenerate = useMemo(() => {
     if (loading) return false

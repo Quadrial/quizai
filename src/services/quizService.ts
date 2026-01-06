@@ -12,6 +12,10 @@ export class QuizService {
   private model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
 
   async generateQuiz(material: StudyMaterial, questionCount: number = 5, questionType: 'multiple-choice' | 'true-false' = 'multiple-choice', difficulty: 'easy' | 'medium' | 'hard' | 'technical' = 'medium'): Promise<Quiz> {
+    if (!material.content) {
+      throw new Error('Material content is required to generate a quiz')
+    }
+
     // Check if API key is available
     if (!import.meta.env.VITE_GEMINI_API_KEY) {
       console.warn('Gemini API key not found, using mock data')
@@ -46,6 +50,10 @@ export class QuizService {
   }
 
   private generateMockQuiz(material: StudyMaterial, questionCount: number, questionType: 'multiple-choice' | 'true-false', difficulty: 'easy' | 'medium' | 'hard' | 'technical'): Quiz {
+    if (!material.content) {
+      throw new Error('Material content is required to generate a quiz')
+    }
+
     // Generate questions based on questionCount and questionType
     const questions: Question[] = []
     for (let i = 0; i < questionCount; i++) {

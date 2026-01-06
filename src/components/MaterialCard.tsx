@@ -208,7 +208,7 @@ const MaterialCard: React.FC<MaterialCardProps> = ({ material, onDelete }) => {
 
           <button
             onClick={() => {
-              const preview = material.content.substring(0, 200) + (material.content.length > 200 ? '...' : '')
+              const preview = material.content ? material.content.substring(0, 200) + (material.content.length > 200 ? '...' : '') : 'No content available'
               alert(`Content Preview:\n\n${preview}`)
             }}
             className="qa-btn qa-btn--surface qa-iconBtn"

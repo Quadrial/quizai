@@ -107,7 +107,10 @@ export class LocalStorageService {
   // Study material operations
   async saveMaterial(material: StudyMaterial, userId: string): Promise<void> {
     const materials = this.getStoredMaterials()
-    const materialWithUser = { ...material, userId }
+    
+    // Omit the 'content' property to avoid storage quota issues
+    const { content, ...materialWithoutContent } = material
+    const materialWithUser = { ...materialWithoutContent, userId }
     
     // Remove existing material with same ID
     const filtered = materials.filter(m => m.id !== material.id)
