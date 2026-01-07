@@ -51,9 +51,8 @@ export class QuizService {
 
   private generateMockQuiz(material: StudyMaterial, questionCount: number, questionType: 'multiple-choice' | 'true-false', difficulty: 'easy' | 'medium' | 'hard' | 'technical'): Quiz {
     if (!material.content) {
-      throw new Error('Material content is required to generate a quiz')
+      throw new Error('Material content is required to generate a mock quiz')
     }
-
     // Generate questions based on questionCount and questionType
     const questions: Question[] = []
     for (let i = 0; i < questionCount; i++) {

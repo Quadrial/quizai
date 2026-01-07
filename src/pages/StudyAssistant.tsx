@@ -15,7 +15,10 @@ import {
   HiArrowPath,
   HiCheckCircle,
   HiBeaker,
-  HiExclamationTriangle
+  HiExclamationTriangle,
+  HiArrowLeft,
+  HiArrowRight,
+  HiXCircle
 } from 'react-icons/hi2'
 
 interface KeyPoint {
@@ -68,6 +71,13 @@ const StudyAssistant: React.FC = () => {
   const [highlightedSection, setHighlightedSection] = useState<string>('')
   const textRefs = useRef<Map<string, HTMLDivElement>>(new Map())
   const wordsArrayRef = useRef<Map<string, string[]>>(new Map())
+
+  // Quiz state
+  const [quizStarted, setQuizStarted] = useState(false)
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
+  const [userAnswers, setUserAnswers] = useState<number[]>([])
+  const [showExplanation, setShowExplanation] = useState(false)
+  const [quizCompleted, setQuizCompleted] = useState(false)
 
 
 
@@ -366,7 +376,7 @@ Try:
   }
 }, [voices, selectedVoice, isPlaying, currentSection, rate])
 
-const HighlightedText: React.FC<{
+const HighlightedText: React.FC <{
   text: string
   section: string
   isActive: boolean
@@ -434,7 +444,7 @@ const HighlightedText: React.FC<{
                 <React.Fragment key={`${pIndex}-${wIndex}`}>
                   <span
                     onClick={() => handleWordClick(currentGlobalIndex)}
-                    className={[
+                    className={[ 
                       'word-highlight',
                       'qa-word',
                       highlight ? 'qa-word--active' : '',
@@ -633,6 +643,11 @@ const HighlightedText: React.FC<{
                     setStudyContent(null)
                     setProgress(0)
                     setProgressMessage('')
+                    setQuizStarted(false)
+                    setCurrentQuestionIndex(0)
+                    setUserAnswers([])
+                    setShowExplanation(false)
+                    setQuizCompleted(false)
                     stopAllAudio()
                   }}
                   className="qa-btn qa-btn--surface"
@@ -839,6 +854,272 @@ const HighlightedText: React.FC<{
                     </div>
                   ))}
                 </div>
+              </section>
+            )}
+
+            {/* Quiz Section */}
+            {studyContent.examQuestions.length > 0 && (
+              <section className="qa-card qa-card__pad">
+                <div className="qa-cardHead">
+                  <div className="qa-cardHead__title">
+                    <HiSparkles className="qa-ico qa-ico--lg" />
+                    <h2 className="qa-cardTitle">Knowledge Quiz</h2>
+                  </div>
+                </div>
+
+                {!quizStarted ? (
+                  <div className="qa-quizIntro">
+                    <p>Test your understanding of the material with {studyContent.examQuestions.length} challenging questions.</p>
+                    <button
+                      onClick={() => {
+                        setQuizStarted(true)
+                        setUserAnswers(new Array(studyContent.examQuestions.length).fill(-1))
+                      }}
+                      className="qa-btn qa-btn--primary qa-btn--full"
+                    >
+                      <HiSparkles className="qa-ico qa-ico--btn" />
+                      Start Quiz
+                    </button>
+                  </div>
+                ) : quizCompleted ? (
+                  (() => {
+                    const answeredCount = userAnswers.filter(a => a !== -1).length
+                    const correctCount = userAnswers.filter((answer, index) => 
+                      answer !== -1 && answer === studyContent.examQuestions[index].correctAnswer
+                    ).length
+                    const score = answeredCount > 0 ? Math.round((correctCount / answeredCount) * 100) : 0
+
+                    const scoreTone = score >= 80 ? 'qa-score--good' : score >= 60 ? 'qa-score--mid' : 'qa-score--bad'
+
+                    return (
+                      <div className="qa-quizResults">
+                        <div className={`qa-score ${scoreTone}`}>
+                          <div className="qa-score__value">{score}%</div>
+                          <div className="qa-score__sub">
+                            {correctCount} correct out of {answeredCount} answered
+                            {answeredCount < studyContent.examQuestions.length ? (
+                              <span className="qa-score__muted"> • {studyContent.examQuestions.length - answeredCount} skipped</span>
+                            ) : null}
+                          </div>
+                        </div>
+
+                        <div className="qa-resultsStats">
+                          <div className="qa-miniStat">
+                            <div className="qa-miniStat__label">Questions</div>
+                            <div className="qa-miniStat__value">{studyContent.examQuestions.length}</div>
+                          </div>
+                          <div className="qa-miniStat">
+                            <div className="qa-miniStat__label">Answered</div>
+                            <div className="qa-miniStat__value">{answeredCount}</div>
+                          </div>
+                          <div className="qa-miniStat">
+                            <div className="qa-miniStat__label">Correct</div>
+                            <div className="qa-miniStat__value">{correctCount}</div>
+                          </div>
+                        </div>
+
+                        <div className="qa-resultsActions">
+                          <button
+                            onClick={() => {
+                              setQuizStarted(false)
+                              setCurrentQuestionIndex(0)
+                              setUserAnswers([])
+                              setShowExplanation(false)
+                              setQuizCompleted(false)
+                            }}
+                            className="qa-btn qa-btn--surface"
+                          >
+                            <HiArrowPath className="qa-ico qa-ico--btn" />
+                            Retake Quiz
+                          </button>
+                        </div>
+
+                        <div className="qa-reviewList">
+                          {studyContent.examQuestions.map((question, index) => {
+                            const userAnswer = userAnswers[index]
+                            const isAnswered = userAnswer !== -1
+                            const isCorrect = userAnswer === question.correctAnswer
+
+                            return (
+                              <article key={index} className="qa-card qa-card__pad qa-reviewQ">
+                                <div className="qa-reviewQ__head">
+                                  <div className={`qa-reviewBadge ${isAnswered ? (isCorrect ? 'qa-reviewBadge--good' : 'qa-reviewBadge--bad') : ''}`}>
+                                    {index + 1}
+                                  </div>
+                                  <div className="qa-truncate">
+                                    <h3 className="qa-reviewQ__title">{question.question}</h3>
+                                    <div className="qa-reviewQ__sub">
+                                      {isAnswered ? (
+                                        isCorrect ? (
+                                          <span className="qa-reviewState qa-reviewState--good">
+                                            <HiCheckCircle className="qa-ico qa-ico--btn" /> Correct
+                                          </span>
+                                        ) : (
+                                          <span className="qa-reviewState qa-reviewState--bad">
+                                            <HiXCircle className="qa-ico qa-ico--btn" /> Incorrect
+                                          </span>
+                                        )
+                                      ) : (
+                                        <span className="qa-reviewState">Skipped</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="qa-reviewOptions" role="list">
+                                  {question.options.map((option, optionIndex) => {
+                                    const correct = optionIndex === question.correctAnswer
+                                    const picked = optionIndex === userAnswer
+
+                                    let cls = 'qa-reviewOption'
+                                    if (correct) cls += ' qa-reviewOption--correct'
+                                    if (picked && !correct) cls += ' qa-reviewOption--wrong'
+
+                                    return (
+                                      <div key={optionIndex} role="listitem" className={cls}>
+                                        <div className="qa-reviewOption__left">
+                                          <div className="qa-letter" aria-hidden="true">
+                                            {String.fromCharCode(65 + optionIndex)}
+                                          </div>
+                                          <div className="qa-reviewOption__text">{option}</div>
+                                        </div>
+
+                                        <div className="qa-reviewOption__right">
+                                          {correct ? <HiCheckCircle className="qa-ico qa-ico--btn" /> : null}
+                                          {picked && !correct ? <HiXCircle className="qa-ico qa-ico--btn" /> : null}
+                                        </div>
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+
+                                {question.explanation && (
+                                  <div className="qa-expl">
+                                    <div className="qa-expl__title">Explanation</div>
+                                    <p className="qa-expl__text">{question.explanation}</p>
+                                  </div>
+                                )}
+                              </article>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })()
+                ) : (
+                  <div>
+                    <div className="qa-progress">
+                      Question {currentQuestionIndex + 1} of {studyContent.examQuestions.length}
+                      <span className="qa-dot">•</span>
+                      {Math.round(((currentQuestionIndex + 1) / studyContent.examQuestions.length) * 100)}% complete
+                    </div>
+
+                    <div className="qa-quizHint">
+                      Score is based on answered questions. You can skip and come back.
+                    </div>
+
+                    <div className="qa-quizQuestion">
+                      <h3>{studyContent.examQuestions[currentQuestionIndex].question}</h3>
+                      {studyContent.examQuestions[currentQuestionIndex].type === 'multiple-choice' ? (
+                        <div className="qa-answerList" role="listbox" aria-label="Answer choices">
+                          {studyContent.examQuestions[currentQuestionIndex].options.map((option, idx) => {
+                            const isSel = userAnswers[currentQuestionIndex] === idx
+                            return (
+                              <button
+                                key={idx}
+                                type="button"
+                                className={`qa-answer ${isSel ? 'qa-answer--selected' : ''}`}
+                                onClick={() => {
+                                  const newAnswers = [...userAnswers]
+                                  newAnswers[currentQuestionIndex] = idx
+                                  setUserAnswers(newAnswers)
+                                }}
+                                aria-selected={isSel}
+                              >
+                                <div className="qa-answer__letter" aria-hidden="true">
+                                  {String.fromCharCode(65 + idx)}
+                                </div>
+                                <div className="qa-answer__text">{option}</div>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      ) : (
+                        <div className="qa-answerList" role="listbox" aria-label="Answer choices">
+                          {['True', 'False'].map((option, idx) => {
+                            const isSel = userAnswers[currentQuestionIndex] === idx
+                            return (
+                              <button
+                                key={idx}
+                                type="button"
+                                className={`qa-answer ${isSel ? 'qa-answer--selected' : ''}`}
+                                onClick={() => {
+                                  const newAnswers = [...userAnswers]
+                                  newAnswers[currentQuestionIndex] = idx
+                                  setUserAnswers(newAnswers)
+                                }}
+                                aria-selected={isSel}
+                              >
+                                <div className="qa-answer__letter" aria-hidden="true">
+                                  {String.fromCharCode(65 + idx)}
+                                </div>
+                                <div className="qa-answer__text">{option}</div>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {showExplanation && (
+                      <div className="qa-explanation">
+                        <p><strong>Correct Answer:</strong> {studyContent.examQuestions[currentQuestionIndex].options[studyContent.examQuestions[currentQuestionIndex].correctAnswer]}</p>
+                        <p>{studyContent.examQuestions[currentQuestionIndex].explanation}</p>
+                      </div>
+                    )}
+
+                    <div className="qa-quizNav">
+                      <button
+                        onClick={() => {
+                          if (currentQuestionIndex > 0) {
+                            setCurrentQuestionIndex(currentQuestionIndex - 1)
+                            setShowExplanation(false)
+                          }
+                        }}
+                        disabled={currentQuestionIndex === 0}
+                        className="qa-btn qa-btn--surface"
+                      >
+                        <HiArrowLeft className="qa-ico qa-ico--btn" />
+                        Previous
+                      </button>
+
+                      {currentQuestionIndex === studyContent.examQuestions.length - 1 ? (
+                        <button 
+                          onClick={() => setQuizCompleted(true)} 
+                          className="qa-btn qa-btn--primary"
+                        >
+                          <HiCheckCircle className="qa-ico qa-ico--btn" />
+                          Submit
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => {
+                            setCurrentQuestionIndex(currentQuestionIndex + 1)
+                            setShowExplanation(false)
+                          }} 
+                          className="qa-btn qa-btn--primary"
+                        >
+                          Next
+                          <HiArrowRight className="qa-ico qa-ico--btn" />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="qa-quizHint">
+                      Score is based on answered questions. You can skip and come back.
+                    </div>
+                  </div>
+                )}
               </section>
             )}
           </div>

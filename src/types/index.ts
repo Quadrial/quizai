@@ -11,7 +11,7 @@ export type QuizType = 'multiple-choice' | 'true-false';
 export interface Quiz {
   id: string;
   title: string;
-  content: string;
+  content?: string;
   questions: Question[];
   createdAt: string;
   userId?: string;

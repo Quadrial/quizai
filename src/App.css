@@ -881,7 +881,7 @@ button, input, textarea, select{ font: inherit; }
 
 /* Progress bar */
 .qa-progress{
-  height: 10px;
+  height: 50px;
   border-radius: 999px;
   background: rgba(148,163,184,0.25);
   overflow:hidden;

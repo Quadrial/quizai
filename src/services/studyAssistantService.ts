@@ -468,12 +468,13 @@ TASK: Create a detailed study guide with the following sections:
 
    Extract 12-20 key points covering all major topics.
 
-2. EXAM QUESTIONS: Create 20-30 exam questions covering ALL aspects of the document:
-   - Mix of multiple-choice (15-20 questions) and true/false (10-15 questions)
+2. EXAM QUESTIONS: Create 30-50 exam questions covering ALL aspects of the document:
+   - Mix of multiple-choice (25-35 questions) and true/false (15-25 questions)
    - Cover every major topic and subtopic from the document
    - Multiple-choice: 4 options each, only one correct
    - True/False: Clear statements that can be verified from the document
    - Each question MUST be directly answerable from the document content
+   - Make the questions challenging and technical, focusing on deep understanding, application, and analysis rather than simple recall. Include questions that require connecting concepts and critical thinking.
    - Include explanation for correct answer with reference to the content
    - Include the topic/concept being tested
 
@@ -611,7 +612,7 @@ IMPORTANT: Return ONLY the JSON object. No text before or after. No markdown. No
         }
         break; // If successful, break out of the retry loop
       } catch (error: any) {
-        if (error.response && error.response.status === 429) {
+        if (error.response && (error.response.status === 429 || error.response.status === 503)) {
           attempt++;
           const retryAfterHeader = error.response.headers.get('Retry-After');
           let delay = 2000 * Math.pow(2, attempt - 1); // Exponential backoff starting at 2s
@@ -630,12 +631,13 @@ IMPORTANT: Return ONLY the JSON object. No text before or after. No markdown. No
           }
           
           if (attempt < MAX_RETRIES) {
-            console.warn(`Rate limit hit. Retrying in ${delay / 1000} seconds... (Attempt ${attempt}/${MAX_RETRIES})`);
-            progressCallback?.(70 + (attempt / MAX_RETRIES) * 10, `Rate limit hit. Retrying in ${Math.round(delay / 1000)}s...`);
+            const errorType = error.response.status === 503 ? 'service overload' : 'rate limit';
+            console.warn(`${errorType} hit. Retrying in ${delay / 1000} seconds... (Attempt ${attempt}/${MAX_RETRIES})`);
+            progressCallback?.(70 + (attempt / MAX_RETRIES) * 10, `${errorType} hit. Retrying in ${Math.round(delay / 1000)}s...`);
             await new Promise(resolve => setTimeout(resolve, delay));
           } else {
             console.error('Max retries reached for API call.');
-            throw new Error('Failed to generate study content due to too many requests. Please try again later.');
+            throw new Error('Failed to generate study content due to API issues. Please try again later.');
           }
         } else {
           throw error; // Re-throw other errors immediately
