@@ -1,6 +1,8 @@
 // Real Gemini AI integration
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import * as pdfjsLib from 'pdfjs-dist'
+import mammoth from 'mammoth'
+import JSZip from 'jszip'
 import type { Quiz, Question, StudyMaterial } from '../types'
 
 // Set up PDF.js worker - use local worker file from public directory
@@ -42,10 +44,51 @@ export class QuizService {
         createdAt: new Date().toISOString(),
         type: questionType
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating quiz with AI:', error)
-      console.log('Falling back to mock data')
-      return this.generateMockQuiz(material, questionCount, questionType, difficulty)
+
+      // Handle specific API errors with user-friendly messages
+      if (error.response) {
+        const status = error.response.status
+        const statusText = error.response.statusText || ''
+
+        if (status === 429) {
+          // Rate limit exceeded
+          const retryAfter = error.response.headers?.get?.('Retry-After')
+          const message = retryAfter
+            ? `Rate limit exceeded. Please wait ${retryAfter} seconds before trying again.`
+            : 'Rate limit exceeded. Please wait a moment before trying again.'
+          throw new Error(message)
+        } else if (status === 503) {
+          // Service unavailable - model overload
+          throw new Error('The AI model is currently overloaded. Please try again in a few minutes.')
+        } else if (status === 500) {
+          // Internal server error
+          throw new Error('The AI service is experiencing technical difficulties. Please try again later.')
+        } else if (status === 400) {
+          // Bad request - possibly invalid input
+          throw new Error('Invalid request to AI service. Please check your content and try again.')
+        } else if (status === 401 || status === 403) {
+          // Authentication issues
+          throw new Error('Authentication failed with AI service. Please contact support.')
+        } else {
+          // Other HTTP errors
+          throw new Error(`AI service error (${status}): ${statusText}. Please try again later.`)
+        }
+      } else if (error.message) {
+        // Handle common error messages
+        if (error.message.includes('network') || error.message.includes('fetch')) {
+          throw new Error('Network connection failed. Please check your internet connection and try again.')
+        } else if (error.message.includes('timeout')) {
+          throw new Error('Request timed out. The AI service may be busy. Please try again.')
+        } else {
+          // Pass through the original error message if it's already user-friendly
+          throw error
+        }
+      } else {
+        // Generic fallback
+        throw new Error('An unexpected error occurred while generating your quiz. Please try again.')
+      }
     }
   }
 
@@ -266,6 +309,49 @@ Generate exactly ${questionCount} questions. Return only the JSON, no additional
       console.error('Error extracting text from PDF:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       throw new Error(`Failed to extract text from PDF: ${errorMessage}`)
+    }
+  }
+
+  async extractTextFromWord(file: File): Promise<string> {
+    try {
+      const arrayBuffer = await file.arrayBuffer()
+      const result = await mammoth.extractRawText({ arrayBuffer })
+      return result.value
+    } catch (error) {
+      console.error('Error extracting text from Word document:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      throw new Error(`Failed to extract text from Word document: ${errorMessage}`)
+    }
+  }
+
+  async extractTextFromPowerPoint(file: File): Promise<string> {
+    try {
+      const arrayBuffer = await file.arrayBuffer()
+      const zip = await JSZip.loadAsync(arrayBuffer)
+      const slidePromises: Promise<string>[] = []
+
+      zip.folder('ppt/slides')?.forEach((relativePath, file) => {
+        if (relativePath.endsWith('.xml')) {
+          slidePromises.push(file.async('string'))
+        }
+      })
+
+      const slideXmls = await Promise.all(slidePromises)
+      let fullText = ''
+
+      const parser = new DOMParser()
+      for (const xml of slideXmls) {
+        const doc = parser.parseFromString(xml, 'application/xml')
+        const textNodes = doc.getElementsByTagName('a:t')
+        for (let i = 0; i < textNodes.length; i++) {
+          fullText += textNodes[i].textContent + '\n'
+        }
+      }
+      return fullText
+    } catch (error) {
+      console.error('Error extracting text from PowerPoint:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      throw new Error(`Failed to extract text from PowerPoint: ${errorMessage}`)
     }
   }
 

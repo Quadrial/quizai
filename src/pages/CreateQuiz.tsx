@@ -8,7 +8,6 @@ import { dataService } from '../services/dataService'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
 import type { StudyMaterial } from '../types'
-import * as pdfjsLib from 'pdfjs-dist'
 import {
   HiDocumentText,
   HiLink,
@@ -23,18 +22,18 @@ const CreateQuiz: React.FC = () => {
   const navigate = useNavigate()
 
   const [step, setStep] = useState<'material' | 'generating'>('material')
-  const [materialType, setMaterialType] = useState<'text' | 'pdf' | 'url'>('text')
+  const [materialType, setMaterialType] = useState<'text' | 'document' | 'url'>('text')
   const [materialName, setMaterialName] = useState('')
   const [textContent, setTextContent] = useState('')
   const [urlContent, setUrlContent] = useState('')
-  const [pdfFile, setPdfFile] = useState<File | null>(null)
+  const [documentFile, setDocumentFile] = useState<File | null>(null)
   const [questionCount, setQuestionCount] = useState(10)
   const [questionType, setQuestionType] = useState<'multiple-choice' | 'true-false'>('multiple-choice')
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard' | 'technical'>('medium')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [pdfProcessing, setPdfProcessing] = useState(false)
-  const [pdfProgress, setPdfProgress] = useState(0)
+  const [documentProcessing, setDocumentProcessing] = useState(false)
+  const [documentProgress, setDocumentProgress] = useState(0)
 
 
 
@@ -42,9 +41,9 @@ const CreateQuiz: React.FC = () => {
     if (loading) return false
     if (materialType === 'text') return textContent.trim().length >= 100
     if (materialType === 'url') return urlContent.trim().length > 8
-    if (materialType === 'pdf') return !!pdfFile && !pdfProcessing
+    if (materialType === 'document') return !!documentFile && !documentProcessing
     return false
-  }, [loading, materialType, textContent, urlContent, pdfFile, pdfProcessing])
+  }, [loading, materialType, textContent, urlContent, documentFile, documentProcessing])
 
   const handleGenerateQuiz = async () => {
     if (!user) return
@@ -62,13 +61,34 @@ const CreateQuiz: React.FC = () => {
       } else if (materialType === 'url') {
         content = await quizService.extractTextFromURL(urlContent)
         name = name || urlContent
-      } else if (materialType === 'pdf' && pdfFile) {
-        setPdfProcessing(true)
-        setPdfProgress(10)
-        content = await quizService.extractTextFromPDF(pdfFile)
-        setPdfProgress(100)
-        setPdfProcessing(false)
-        name = name || pdfFile.name
+      } else if (materialType === 'document' && documentFile) {
+        setDocumentProcessing(true)
+        setDocumentProgress(10)
+        
+        // Determine file type and extract accordingly
+        const fileName = documentFile.name.toLowerCase()
+        const mimeType = documentFile.type
+        
+        if (mimeType === 'application/pdf' || fileName.endsWith('.pdf')) {
+          console.log('Processing as PDF file')
+          content = await quizService.extractTextFromPDF(documentFile)
+        } else if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
+                   mimeType === 'application/msword' ||
+                   fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
+          console.log('Processing as Word file')
+          content = await quizService.extractTextFromWord(documentFile)
+        } else if (mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
+                   mimeType === 'application/vnd.ms-powerpoint' ||
+                   fileName.endsWith('.pptx') || fileName.endsWith('.ppt')) {
+          console.log('Processing as PowerPoint file')
+          content = await quizService.extractTextFromPowerPoint(documentFile)
+        } else {
+          throw new Error(`Unsupported document type. Detected MIME type: ${mimeType}, filename: ${fileName}. Please upload PDF, Word (.docx/.doc), or PowerPoint (.pptx/.ppt) files.`)
+        }
+        
+        setDocumentProgress(100)
+        setDocumentProcessing(false)
+        name = name || documentFile.name
       }
 
       if (!content.trim()) throw new Error('Please provide some content to generate a quiz from')
@@ -96,47 +116,54 @@ const CreateQuiz: React.FC = () => {
     }
   }
 
-  const handlePdfFileSelect = async (file: File | null) => {
+  const handleDocumentFileSelect = async (file: File | null) => {
     if (!file) {
-      setPdfFile(null)
-      setPdfProgress(0)
+      setDocumentFile(null)
+      setDocumentProgress(0)
       return
     }
 
-    if (!file.type.includes('pdf')) {
-      setError('Please select a valid PDF file')
+    const validTypes = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'application/vnd.ms-powerpoint'
+    ]
+
+    const validExtensions = ['.pdf', '.doc', '.docx', '.ppt', '.pptx']
+
+    const isValidType = validTypes.includes(file.type) || 
+                       validExtensions.some(ext => file.name.toLowerCase().endsWith(ext))
+
+    if (!isValidType) {
+      setError('Please select a valid document (PDF, Word, or PowerPoint)')
       return
     }
 
     if (file.size > 50 * 1024 * 1024) {
-      setError('PDF file size must be less than 50MB')
+      setError('Document file size must be less than 50MB')
       return
     }
 
-    setPdfFile(file)
-    setPdfProcessing(true)
-    setPdfProgress(10)
+    setDocumentFile(file)
+    setDocumentProcessing(true)
+    setDocumentProgress(10)
     setError('')
 
     try {
-      setPdfProgress(30)
-      const arrayBuffer = await file.arrayBuffer()
-      setPdfProgress(60)
-      
-      // Try to load with PDF.js to validate
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
-      setPdfProgress(90)
-
-      const numPages = pdf.numPages
-      setPdfProgress(100)
-      console.log(`PDF validated: ${numPages} pages, ${file.size} bytes`)
+      setDocumentProgress(30)
+      // Basic validation - try to read the file
+      await file.arrayBuffer()
+      setDocumentProgress(100)
+      console.log(`Document validated: ${file.size} bytes`)
     } catch (err) {
-      console.error('PDF validation error:', err)
-      setError('Invalid or corrupted PDF file. Please try a different file.')
-      setPdfFile(null)
-      setPdfProgress(0)
+      console.error('Document validation error:', err)
+      setError('Invalid or corrupted document file. Please try a different file.')
+      setDocumentFile(null)
+      setDocumentProgress(0)
     } finally {
-      setPdfProcessing(false)
+      setDocumentProcessing(false)
     }
   }
 
@@ -221,7 +248,7 @@ const CreateQuiz: React.FC = () => {
           <div className="qa-choiceGrid qa-choiceGrid--3" role="radiogroup" aria-label="Material type">
             {[
               { type: 'text' as const, icon: HiDocumentText, label: 'Text', desc: 'Paste your notes' },
-              { type: 'pdf' as const, icon: HiCloudArrowUp, label: 'PDF', desc: 'Upload a document' },
+              { type: 'document' as const, icon: HiCloudArrowUp, label: 'Document', desc: 'Upload PDF, Word, or PowerPoint' },
               { type: 'url' as const, icon: HiLink, label: 'URL', desc: 'Extract from a page' }
             ].map(({ type, icon: Icon, label, desc }) => {
               const active = materialType === type
@@ -313,53 +340,52 @@ const CreateQuiz: React.FC = () => {
             </div>
           )}
 
-          {materialType === 'pdf' && (
+          {materialType === 'document' && (
             <div className="qa-field">
               <label className="qa-label">
-                PDF upload <span className="qa-label__req">*</span>
+                Document upload <span className="qa-label__req">*</span>
               </label>
+              <p className="qa-sectionDesc">PDF, Word, or PowerPoint up to 50MB. Scanned PDFs may not extract text well.</p>
 
               <div className="qa-upload">
                 <input
                   type="file"
-                  id="pdfFile"
-                  accept=".pdf"
+                  id="documentFile"
+                  accept=".pdf,.doc,.docx,.ppt,.pptx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
                   className="qa-upload__input"
-                  onChange={(e) => handlePdfFileSelect(e.target.files?.[0] || null)}
+                  onChange={(e) => handleDocumentFileSelect(e.target.files?.[0] || null)}
                 />
-                <label htmlFor="pdfFile" className="qa-upload__label">
+                <label htmlFor="documentFile" className="qa-upload__label">
                   <HiCloudArrowUp className="qa-ico qa-ico--lg" />
-                  <div className="qa-upload__title">Click to upload</div>
-                  <div className="qa-upload__sub">PDF up to 50MB</div>
+                  <div className="qa-upload__title">Click to upload Document</div>
+                  <div className="qa-upload__sub">We’ll analyze and generate a quiz</div>
                 </label>
 
-                {pdfFile && (
+                {documentFile && (
                   <div className="qa-upload__fileInfo">
                     <HiDocumentText className="qa-ico qa-ico--btn" />
-                    <span className="qa-truncate" title={pdfFile.name}>
-                      {pdfFile.name}
+                    <span className="qa-truncate" title={documentFile.name}>
+                      {documentFile.name}
                     </span>
                     <span className="qa-upload__fileMeta">
-                      ({(pdfFile.size / 1024 / 1024).toFixed(1)} MB)
+                      ({(documentFile.size / 1024 / 1024).toFixed(1)} MB)
                     </span>
                   </div>
                 )}
 
-                {pdfProcessing && (
+                {documentProcessing && (
                   <div className="qa-upload__progress">
                     <div className="qa-upload__progressTop">
                       <span className="qa-inlineSpin" aria-hidden="true" />
-                      <span className="qa-help">Validating PDF…</span>
-                      <span className="qa-help">{pdfProgress}%</span>
+                      <span className="qa-help">Validating document…</span>
+                      <span className="qa-help">{documentProgress}%</span>
                     </div>
-                    <div className="qa-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pdfProgress}>
-                      <div className="qa-progress__fill" style={{ width: `${pdfProgress}%` }} />
+                    <div className="qa-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={documentProgress}>
+                      <div className="qa-progress__fill" style={{ width: `${documentProgress}%` }} />
                     </div>
                   </div>
                 )}
               </div>
-
-              <div className="qa-help">Tip: scanned PDFs (images) may not extract text well.</div>
             </div>
           )}
         </div>

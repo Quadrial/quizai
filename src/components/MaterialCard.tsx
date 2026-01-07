@@ -131,8 +131,8 @@ const MaterialCard: React.FC<MaterialCardProps> = ({ material, onDelete }) => {
 
   const getTypeLabel = () => {
     switch (material.type) {
-      case 'pdf':
-        return 'PDF Document'
+      case 'document':
+        return 'Document'
       case 'url':
         return 'Web Link'
       case 'text':
@@ -143,7 +143,7 @@ const MaterialCard: React.FC<MaterialCardProps> = ({ material, onDelete }) => {
   }
 
   const typeIconClass =
-    material.type === 'pdf'
+    material.type === 'document'
       ? 'qa-typeIcon--pdf'
       : material.type === 'url'
         ? 'qa-typeIcon--url'
@@ -153,7 +153,7 @@ const MaterialCard: React.FC<MaterialCardProps> = ({ material, onDelete }) => {
 
   const Icon = React.useMemo(() => {
     switch (material.type) {
-      case 'pdf':
+      case 'document':
         return HiDocument
       case 'url':
         return HiLink

@@ -29,7 +29,7 @@ export interface Question {
 
 export interface StudyMaterial {
   id: string;
-  type: 'pdf' | 'text' | 'url';
+  type: 'document' | 'text' | 'url';
   content?: string;
   name: string;
   uploadedAt: string;

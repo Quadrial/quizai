@@ -15,6 +15,20 @@ export class LocalStorageService {
   private readonly MATERIALS_KEY = 'quizai_materials'
   private readonly ATTEMPTS_KEY = 'quizai_attempts'
   private readonly CURRENT_USER_KEY = 'quizai_current_user'
+  private readonly USER_API_KEY_KEY = 'quizai_user_api_key'
+
+  // User API key management
+  getUserApiKey(): string | null {
+    return localStorage.getItem(this.USER_API_KEY_KEY)
+  }
+
+  saveUserApiKey(apiKey: string): void {
+    localStorage.setItem(this.USER_API_KEY_KEY, apiKey)
+  }
+
+  clearUserApiKey(): void {
+    localStorage.removeItem(this.USER_API_KEY_KEY)
+  }
 
   // User management
   async signUp(email: string, password: string): Promise<User> {

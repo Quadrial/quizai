@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import {
   HiUser,
@@ -7,12 +7,35 @@ import {
   HiInformationCircle,
   HiExclamationTriangle,
   HiCheckCircle,
-  HiXMark
+  HiXMark,
+  HiKey,
+  HiOutlineLink
 } from 'react-icons/hi2'
+import { localStorageService } from '../services/localStorageService'
 
 const Settings: React.FC = () => {
   const { user, signOut } = useAuth()
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [apiKey, setApiKey] = useState('')
+  const [showApiSuccess, setShowApiSuccess] = useState(false)
+
+  useEffect(() => {
+    const storedApiKey = localStorageService.getUserApiKey()
+    if (storedApiKey) {
+      setApiKey(storedApiKey)
+    }
+  }, [])
+
+  const handleSaveApiKey = () => {
+    localStorageService.saveUserApiKey(apiKey)
+    setShowApiSuccess(true)
+    setTimeout(() => setShowApiSuccess(false), 3000)
+  }
+
+  const handleClearApiKey = () => {
+    localStorageService.clearUserApiKey()
+    setApiKey('')
+  }
 
   const handleExportData = () => {
     if (!user) return
@@ -112,6 +135,63 @@ const Settings: React.FC = () => {
                 <label className="block text-sm font-semibold text-on-background mb-1">User ID</label>
                 <p className="text-on-background/60 text-sm font-mono break-all">{user.id}</p>
               </div>
+            </div>
+          </div>
+
+          {/* API Key Management */}
+          <div className="bg-surface rounded-2xl shadow-xl p-8 border border-gray-100">
+            <div className="flex items-center mb-6">
+              <HiKey className="w-6 h-6 text-primary mr-3" />
+              <h2 className="text-2xl font-bold text-on-background">API Key Management</h2>
+            </div>
+            <div className="space-y-4">
+              <p className="text-on-background/60 text-sm leading-relaxed">
+                If the admin's API key reaches its limit, you can provide your own Google Gemini API key to continue using the AI features. Your key is stored locally in your browser and never sent to our servers.
+              </p>
+              <div>
+                <label htmlFor="apiKey" className="block text-sm font-semibold text-on-background mb-2">Your Gemini API Key</label>
+                <div className="relative">
+                  <input
+                    id="apiKey"
+                    type="password"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder="Enter your API key"
+                    className="w-full px-4 py-3 bg-surface-200 rounded-lg border-2 border-primary/20 focus:ring-primary focus:border-primary transition"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <a
+                  href="https://aistudio.google.com/app/u/1/api-keys"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center text-sm font-semibold text-primary hover:text-primary/80"
+                >
+                  <HiOutlineLink className="w-4 h-4 mr-1" />
+                  Get your API key
+                </a>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleClearApiKey}
+                    className="px-4 py-2 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition"
+                  >
+                    Clear
+                  </button>
+                  <button
+                    onClick={handleSaveApiKey}
+                    className="px-6 py-2 bg-gradient-to-r from-primary to-secondary text-on-primary font-semibold rounded-lg hover:from-primary/90 hover:to-secondary/90 transition"
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+              {showApiSuccess && (
+                <div className="mt-4 flex items-center p-3 bg-green-50 text-green-800 rounded-lg border border-green-200">
+                  <HiCheckCircle className="w-5 h-5 mr-2" />
+                  <p className="text-sm">API key saved successfully!</p>
+                </div>
+              )}
             </div>
           </div>
 
