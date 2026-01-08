@@ -593,17 +593,18 @@ IMPORTANT: Return ONLY the JSON object. No text before or after. No markdown. No
           console.error('JSON Parse Error:', parseError)
           console.error('Failed to parse response. Attempting alternative parsing...')
           
-          // Try to fix common JSON issues
-          const fixedResponse = responseText
-            // Fix unescaped quotes in strings
-            .replace(/([^\\])"/g, '$1\\"')
-            // Fix trailing commas
-            .replace(/,(\s*[}\]])/g, '$1')
-            // Remove any control characters
-            // eslint-disable-next-line no-control-regex
-            .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
-          
           try {
+            // Try to fix common JSON issues from LLM responses.
+            const fixedResponse = responseText
+              // 1. Fix for "bad escaped character" by escaping backslashes
+              // that are not part of a valid JSON escape sequence.
+              .replace(/\\(?![\\/"bfnrtu])/g, '\\\\')
+              // 2. Remove trailing commas from objects and arrays.
+              .replace(/,(\s*[}\]])/g, '$1')
+              // 3. Remove illegal control characters.
+              // eslint-disable-next-line no-control-regex
+              .replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
+            
             studyContent = JSON.parse(fixedResponse)
           } catch (secondError) {
             console.error('Second parse attempt failed:', secondError)
