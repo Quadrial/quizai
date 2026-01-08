@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { useAuth } from '../hooks/useAuth'
+import { useApiNotification } from '../contexts/ApiNotificationContext'
 import { studyAssistantService } from '../services/studyAssistantService'
 import ErrorMessage from '../components/ErrorMessage'
 import {
@@ -48,6 +49,7 @@ interface StudyContent {
 
 const StudyAssistant: React.FC = () => {
   const { user } = useAuth()
+  const { showNotification } = useApiNotification()
   const [pdfFile, setPdfFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [processing, setProcessing] = useState(false)
@@ -183,6 +185,7 @@ const StudyAssistant: React.FC = () => {
 
       setProgressMessage('Analysis complete!')
       setStudyContent(content)
+      showNotification('Document analyzed successfully!')
     } catch (err) {
       const error = err as Error
       console.error('Analysis error:', error)
@@ -203,6 +206,7 @@ Try:
       }
       
       setError(errorMessage)
+      showNotification(`Analysis failed: ${error.message}`)
     } finally {
       setLoading(false)
       setTimeout(() => setProcessing(false), 500)

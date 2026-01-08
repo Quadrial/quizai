@@ -3,10 +3,9 @@ import * as pdfjsLib from 'pdfjs-dist'
 import { tesseractService } from './tesseractService'
 import mammoth from 'mammoth'
 import JSZip from 'jszip'
+import { getApiKey } from './apiKeyService'
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
-
-const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || '')
 
 interface ProgressCallback {
   (progress: number, message: string): void
@@ -439,9 +438,11 @@ async createDiagramPlaceholder(concept: string, description: string): Promise<st
   text: string,
   progressCallback?: (progress: number, message: string) => void
 ): Promise<StudyContent> {
-  if (!import.meta.env.VITE_GEMINI_API_KEY) {
-    throw new Error('Gemini API key not configured')
+  const apiKey = getApiKey()
+  if (!apiKey) {
+    throw new Error('Gemini API key not configured. Please add it in settings.')
   }
+  const genAI = new GoogleGenerativeAI(apiKey)
 
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })

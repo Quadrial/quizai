@@ -4,31 +4,31 @@ import * as pdfjsLib from 'pdfjs-dist'
 import mammoth from 'mammoth'
 import JSZip from 'jszip'
 import type { Quiz, Question, StudyMaterial } from '../types'
+import { getApiKey } from './apiKeyService'
 
 // Set up PDF.js worker - use local worker file from public directory
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
 
-const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY)
-
 export class QuizService {
-  private model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
-
   async generateQuiz(material: StudyMaterial, questionCount: number = 5, questionType: 'multiple-choice' | 'true-false' = 'multiple-choice', difficulty: 'easy' | 'medium' | 'hard' | 'technical' = 'medium'): Promise<Quiz> {
     if (!material.content) {
       throw new Error('Material content is required to generate a quiz')
     }
 
+    const apiKey = getApiKey();
     // Check if API key is available
-    if (!import.meta.env.VITE_GEMINI_API_KEY) {
+    if (!apiKey) {
       console.warn('Gemini API key not found, using mock data')
       return this.generateMockQuiz(material, questionCount, questionType, difficulty)
     }
+    const genAI = new GoogleGenerativeAI(apiKey)
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
 
     try {
       const prompt = this.createPrompt(material.content, questionCount, questionType, difficulty)
       
       // Use the simpler generateContent method
-      const result = await this.model.generateContent(prompt)
+      const result = await model.generateContent(prompt)
       const response = await result.response
       const text = response.text()
       
@@ -373,11 +373,14 @@ Generate exactly ${questionCount} questions. Return only the JSON, no additional
     examLikely: { question: string; answer: string; evidence: string }[]
     diagrams: { title: string; mermaid: string }[]
   }> {
+    const apiKey = getApiKey()
     // Check if API key is available
-    if (!import.meta.env.VITE_GEMINI_API_KEY) {
+    if (!apiKey) {
       console.warn('Gemini API key not found, using mock data')
       return this.generateMockTutorPack(params)
     }
+    const genAI = new GoogleGenerativeAI(apiKey)
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
 
     try {
       const prompt = `You are an expert educational AI assistant. Analyze the following PDF content and create a comprehensive tutor pack.
@@ -430,7 +433,7 @@ RESPONSE FORMAT: Return ONLY valid JSON with this exact structure:
 
 IMPORTANT: Return ONLY the JSON object. No text before or after. No markdown. No explanations.`
 
-      const result = await this.model.generateContent(prompt)
+      const result = await model.generateContent(prompt)
       const response = await result.response
       const text = response.text()
       
