@@ -164,10 +164,15 @@ const Translator: React.FC = () => {
       setTranslatedText(translation)
 
       // Generate reply suggestions using AI with fallback
-      const suggestionsPrompt = `Based on the following ${sourceLang} text and its ${targetLang} translation, provide 4 appropriate reply suggestions in ${targetLang}. Return only the suggestions as a numbered list, no additional text.
+      const suggestionLanguage = targetLang === 'hausa' ? 'Hausa' : 'English'
+      const suggestionsPrompt = `You are a helpful translation assistant. A user cannot speak or understand Hausa, so generate 4 short, natural replies in ${suggestionLanguage} that are appropriate for responding to the message below.
 
-Text: "${inputText}"
-Translation: "${translation}"`
+Use the translated text to determine meaning, tone, and the best response style. If the incoming message is a greeting, reply politely. If it is a question, answer directly. If it is a statement, acknowledge it naturally.
+
+Original ${sourceLang} text: "${inputText}"
+${suggestionLanguage} translation: "${translation}"
+
+Provide exactly 4 reply suggestions in ${suggestionLanguage}, one per line, with no numbering, no labels, and no extra explanation.`
 
       const apiKey = getApiKey()
       if (apiKey) {
@@ -178,12 +183,15 @@ Translation: "${translation}"`
           const response = await result.response
           const suggestionsText = response.text().trim()
           
-          // Parse the numbered list
           const suggestions = suggestionsText.split('\n')
             .map(line => line.replace(/^\d+\.\s*/, '').trim())
             .filter(line => line.length > 0)
           
-          setSuggestions(suggestions.slice(0, 4))
+          if (suggestions.length > 0) {
+            setSuggestions(suggestions.slice(0, 4))
+          } else {
+            setSuggestions(getFallbackSuggestions(sourceLang))
+          }
         } catch (error) {
           console.warn('AI suggestions failed, using fallback:', error)
           setSuggestions(getFallbackSuggestions(sourceLang))
@@ -261,9 +269,18 @@ Translation: "${translation}"`
     speechSynthesis.speak(utterance)
   }
 
-  const handleSuggestionClick = (suggestion: string) => {
-    const lang = sourceLang === 'hausa' ? 'english' : 'hausa'
-    speakText(suggestion, lang)
+  const handleSuggestionClick = async (suggestion: string) => {
+    if (sourceLang === 'hausa') {
+      try {
+        const hausaText = await translateText(suggestion, 'english', 'hausa')
+        speakText(hausaText, 'hausa')
+      } catch (error) {
+        const fallback = getMockTranslation(suggestion, 'english', 'hausa')
+        speakText(fallback, 'hausa')
+      }
+    } else {
+      speakText(suggestion, 'hausa')
+    }
   }
 
   return (
