@@ -53,7 +53,7 @@ const Translator: React.FC = () => {
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [isTranslating, setIsTranslating] = useState(false)
 
-  // Translation function using Gemini AI
+  // Translation function with fallback models
   const translateText = async (text: string, from: string, to: string) => {
     const apiKey = getApiKey()
     if (!apiKey) {
@@ -61,25 +61,109 @@ const Translator: React.FC = () => {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+    
+    // Try models in order of preference
+    const modelsToTry = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']
+    
+    for (const modelName of modelsToTry) {
+      try {
+        const model = genAI.getGenerativeModel({ model: modelName })
+        const prompt = `Translate the following text from ${from} to ${to}. Only return the translation, no additional text:\n\n${text}`
 
-    const prompt = `Translate the following text from ${from} to ${to}. Only return the translation, no additional text:\n\n${text}`
+        const result = await model.generateContent(prompt)
+        const response = await result.response
+        return response.text().trim()
+      } catch (error: any) {
+        console.warn(`Model ${modelName} failed:`, error.message)
+        
+        // If it's a 503 (service unavailable), try next model
+        if (error.message?.includes('503') || error.message?.includes('Service Unavailable')) {
+          continue
+        }
+        
+        // If it's a different error (like invalid API key), don't try other models
+        if (error.message?.includes('API_KEY_INVALID') || error.message?.includes('API key')) {
+          throw error
+        }
+        
+        // For other errors, continue to next model
+        continue
+      }
+    }
+    
+    // If all models failed, use mock translation as fallback
+    console.warn('All AI models failed, using mock translation')
+    return getMockTranslation(text, from, to)
+  }
 
-    const result = await model.generateContent(prompt)
-    const response = await result.response
-    return response.text().trim()
+  // Mock translation fallback
+  const getMockTranslation = (text: string, from: string, to: string): string => {
+    const lowerText = text.toLowerCase()
+    
+    if (from === 'hausa' && to === 'english') {
+      const translations: { [key: string]: string } = {
+        'sannu': 'hello',
+        'na gode': 'thank you',
+        'yaya kake': 'how are you',
+        'lafiya lau': 'fine thank you',
+        'ban sani ba': 'I don\'t know',
+        'ina kwana': 'good morning',
+        'ina wuni': 'good afternoon',
+        'ina dare': 'good evening',
+        'sai anjima': 'see you later',
+        'allah ya bada albarka': 'God bless you'
+      }
+      return translations[lowerText] || `${text} (translation unavailable - API busy)`
+    } else if (from === 'english' && to === 'hausa') {
+      const translations: { [key: string]: string } = {
+        'hello': 'sannu',
+        'thank you': 'na gode',
+        'how are you': 'yaya kake',
+        'fine thank you': 'lafiya lau',
+        'i don\'t know': 'ban sani ba',
+        'good morning': 'ina kwana',
+        'good afternoon': 'ina wuni',
+        'good evening': 'ina dare',
+        'see you later': 'sai anjima',
+        'god bless you': 'allah ya bada albarka'
+      }
+      return translations[lowerText] || `${text} (translation unavailable - API busy)`
+    }
+    return text
+  }
+
+  // Fallback suggestions when AI is unavailable
+  const getFallbackSuggestions = (sourceLang: string): string[] => {
+    if (sourceLang === 'hausa') {
+      return [
+        'Hello, how are you?',
+        'Thank you very much',
+        'I\'m doing well, thank you',
+        'Nice to meet you',
+        'God bless you'
+      ]
+    } else {
+      return [
+        'Sannu, yaya kake?',
+        'Na gode sosai',
+        'Lafiya lau',
+        'Farinta da haduwa',
+        'Allah ya bada albarka'
+      ]
+    }
   }
 
   const handleTranslate = async () => {
     if (!inputText.trim()) return
 
     setIsTranslating(true)
+    const targetLang = sourceLang === 'hausa' ? 'english' : 'hausa'
+    
     try {
-      const targetLang = sourceLang === 'hausa' ? 'english' : 'hausa'
       const translation = await translateText(inputText, sourceLang, targetLang)
       setTranslatedText(translation)
 
-      // Generate reply suggestions using AI
+      // Generate reply suggestions using AI with fallback
       const suggestionsPrompt = `Based on the following ${sourceLang} text and its ${targetLang} translation, provide 4 appropriate reply suggestions in ${targetLang}. Return only the suggestions as a numbered list, no additional text.
 
 Text: "${inputText}"
@@ -87,35 +171,37 @@ Translation: "${translation}"`
 
       const apiKey = getApiKey()
       if (apiKey) {
-        const genAI = new GoogleGenerativeAI(apiKey)
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
-        const result = await model.generateContent(suggestionsPrompt)
-        const response = await result.response
-        const suggestionsText = response.text().trim()
-        
-        // Parse the numbered list
-        const suggestions = suggestionsText.split('\n')
-          .map(line => line.replace(/^\d+\.\s*/, '').trim())
-          .filter(line => line.length > 0)
-        
-        setSuggestions(suggestions.slice(0, 4))
+        try {
+          const genAI = new GoogleGenerativeAI(apiKey)
+          const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+          const result = await model.generateContent(suggestionsPrompt)
+          const response = await result.response
+          const suggestionsText = response.text().trim()
+          
+          // Parse the numbered list
+          const suggestions = suggestionsText.split('\n')
+            .map(line => line.replace(/^\d+\.\s*/, '').trim())
+            .filter(line => line.length > 0)
+          
+          setSuggestions(suggestions.slice(0, 4))
+        } catch (error) {
+          console.warn('AI suggestions failed, using fallback:', error)
+          setSuggestions(getFallbackSuggestions(sourceLang))
+        }
       } else {
-        // Fallback suggestions
-        setSuggestions(sourceLang === 'hausa' ? [
-          'Hello, how are you?',
-          'Thank you very much',
-          'I\'m doing well, thank you',
-          'Nice to meet you'
-        ] : [
-          'Sannu, yaya kake?',
-          'Na gode sosai',
-          'Lafiya lau',
-          'Farinta da haduwa'
-        ])
+        setSuggestions(getFallbackSuggestions(sourceLang))
       }
     } catch (error) {
       console.error('Translation error:', error)
-      setTranslatedText('Translation failed')
+      
+      // Check if it's a service unavailable error
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      if (errorMessage.includes('503') || errorMessage.includes('Service Unavailable') || errorMessage.includes('high demand')) {
+        setTranslatedText(`${getMockTranslation(inputText, sourceLang, targetLang)} (Note: AI service is currently busy - using offline translation)`)
+      } else {
+        setTranslatedText('Translation failed - please check your API key')
+      }
+      
       setSuggestions([])
     } finally {
       setIsTranslating(false)
