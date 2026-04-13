@@ -234,6 +234,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'Create Quiz', href: '/create-quiz', icon: HiPlus },
     { name: 'Study Assistant', href: '/study-assistant', icon: HiChatBubbleLeftRight },
     { name: 'Materials', href: '/materials', icon: HiArchiveBox },
+    { name: 'Translator', href: '/translator', icon: HiChatBubbleLeftRight },
     { name: 'Settings', href: '/settings', icon: HiCog6Tooth }
   ]
 

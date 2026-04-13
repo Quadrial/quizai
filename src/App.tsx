@@ -13,6 +13,7 @@ import Login from './pages/Login'
 
 import StudyAssistant from './pages/StudyAssistant'
 import MaterialsHistory from './pages/MaterialsHistory'
+import Translator from './pages/Translator'
 import './App.css'
 
 function App() {
@@ -33,6 +34,7 @@ function App() {
               
               <Route path="/study-assistant/:materialId?" element={<StudyAssistant />} />
               <Route path="/materials" element={<MaterialsHistory />} />
+              <Route path="/translator" element={<Translator />} />
             </Routes>
           </Layout>
         </Router>
